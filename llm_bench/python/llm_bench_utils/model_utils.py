@@ -91,6 +91,39 @@ def get_image_param_from_prompt_file(args):
                     raise RuntimeError(f'== The prompt file:{input_prompt} should be ended with .jsonl ==')
     return image_param_list
 
+def get_multimodal_param_from_prompt_file(args):
+    multimodal_param_list = []
+    if args['prompt_file'] is None:
+        if args['multimodal_input']['image'] != '' and args['multimodal_input']['text'] != '':
+            multimodal_param_list.append(args['multimodal_input'])
+        else:
+            raise RuntimeError('== image and text in multimodal input should not be empty ==')
+    else:
+        input_prompt_list = args['prompt_file']
+        for input_prompt in input_prompt_list:
+            if input_prompt.endswith('.jsonl'):
+                if os.path.exists(input_prompt):
+                    log.info(f'Read prompts from {input_prompt}')
+                    multimodal_param = {}
+                    with open(input_prompt, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            multimodal_param = json.loads(line)
+                            if 'image' in multimodal_param:
+                                if multimodal_param['image'] == '':
+                                    raise RuntimeError('== image in prompt file:{input_prompt} should not be empty string ==')
+                            else:
+                                raise RuntimeError(f'== key word "image" does not exist in prompt file:{input_prompt} ==')
+                            if 'text' in multimodal_param:
+                                if multimodal_param['text'] == '':
+                                    raise RuntimeError('== text in prompt file:{input_prompt} should not be empty string ==')
+                            else:
+                                raise RuntimeError(f'== key word "text" does not exist in prompt file:{input_prompt} ==')
+                            multimodal_param_list.append(multimodal_param)
+                else:
+                    raise RuntimeError(f'== The prompt file:{input_prompt} does not exist ==')
+            else:
+                raise RuntimeError(f'== The prompt file:{input_prompt} should be ended with .jsonl ==')
+    return multimodal_param_list
 
 def set_default_param_for_ov_config(ov_config):
     # With this PR https://github.com/huggingface/optimum-intel/pull/362, we are able to disable model cache
@@ -139,6 +172,7 @@ def analyze_args(args):
     model_args["use_cb"] = args.use_cb
     model_args['devices'] = args.device
     model_args['prompt_index'] = [] if args.prompt_index is not None else None
+    model_args['multimodal_input'] = json.loads(args.multimodal_input)
     if model_args['prompt_index'] is not None:
         # Deduplication
         [model_args['prompt_index'].append(i) for i in args.prompt_index if i not in model_args['prompt_index']]

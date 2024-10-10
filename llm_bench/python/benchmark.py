@@ -53,6 +53,7 @@ def gen_iterate_data(
     max_uss_mem='',
     prompt_idx='',
     tokenization_time=[],
+    tm_infer_list=None
 ):
     iter_data = {}
     iter_data['iteration'] = iter_idx
@@ -64,8 +65,8 @@ def gen_iterate_data(
     iter_data['result_md5'] = res_md5
     iter_data['first_token_latency'] = ''
     iter_data['other_tokens_avg_latency'] = ''
-    iter_data['first_token_infer_latency'] = ''
-    iter_data['other_tokens_infer_avg_latency'] = ''
+    iter_data['first_token_infer_latency'] = tm_infer_list[1] if len(tm_infer_list) > 2 else 0
+    iter_data['other_tokens_infer_avg_latency'] = sum(tm_infer_list[2:]) / (len(tm_infer_list) - 2) if len(tm_infer_list) > 2 else 0
     iter_data['max_rss_mem_consumption'] = max_rss_mem
     iter_data['max_shared_mem_consumption'] = max_shared_mem
     iter_data['max_uss_mem_consumption'] = max_uss_mem
@@ -158,6 +159,7 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
     else:
         md5_list[num][prompt_index] = result_md5_list
     per_token_time = generation_time * 1000 / (num_tokens / args['batch_size'])
+    print("========num_tokens=======", num_tokens)
     tm_list = []
     tm_infer_list = []
     if bench_hook is not None:
@@ -169,6 +171,8 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
         [log.debug('[{}]{:.4f}'.format(idx, tm)) for idx, tm in enumerate(tm_infer_list)]
         if args['num_beams'] == 1 and generated_token_size != len(tm_infer_list):
             log.warning(f'Output token size({generated_token_size}) is not equal to infer count({len(tm_infer_list)})')
+        print("========tm_list=======", len(tm_list))
+        print("========tm_infer_list=======", len(tm_infer_list))
     iter_data = gen_iterate_data(
         num,
         input_token_size * args['batch_size'],
@@ -703,6 +707,215 @@ def run_ldm_super_resolution_benchmark(model_path, framework, device, args, num_
 
     return iter_data_list, pretrain_time
 
+def run_minicpmv2(input_text, preprocessor, num, model, tokenizer, args, iter_data_list, md5_list, prompt_index, model_precision, proc_id, streamer, tm_list, tm_infer_list, vision_infer_list):
+    set_seed(args['seed'])
+
+    # todo:save input_text
+    # input_text_list = [input_text] * args['batch_size']
+    # if args["output_dir"] is not None and num == 0:
+    #     for bs_index, in_text in enumerate(input_text_list):
+    #         llm_bench_utils.output_file.output_input_text(in_text, args, model_precision, prompt_index, bs_index, proc_id)
+    
+    # tok_encode_start = time.perf_counter()
+    # input_data = tokenizer(input_text_list, return_tensors='pt')
+    # tok_encode_end = time.perf_counter()
+    # tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
+    picture = input_text['image']
+    image = Image.open(picture).convert('RGB')
+    question = input_text['text']
+    msgs = [{'role': 'user', 'content': question}]
+    inputs, tok_encode_time = preprocessor.get_inputs(image=image, msgs=msgs)
+    print("====tok_encode_time in def run_minicpmv2===", tok_encode_time)
+
+    # inputs.pop('token_type_ids', None)
+    # # Remove `token_type_ids` from inputs
+    # input_tokens = inputs['input_ids'] if 'input_ids' in inputs else inputs
+    # input_token_size = input_tokens[0].numel()
+    # if args['batch_size'] > 1:
+    #     out_str = '[warm-up]' if num == 0 else '[{}]'.format(num)
+    #     out_str += " Batch_size={}, ".format(args['batch_size'])
+    #     out_str += 'all input token size after padding: {} * {}, '.format(input_token_size, args['batch_size'])
+    #     if args['infer_count'] is not None:
+    #         out_str += 'all max_output_token_size: {} * {}'.format(args['infer_count'], args['batch_size'])
+    #     log.info(out_str)
+
+    max_rss_mem_consumption = ''
+    max_uss_mem_consumption = ''
+    max_shared_mem_consumption = ''
+    if (args['mem_consumption'] == 1 and num == 0) or args['mem_consumption'] == 2:
+        mem_consumption.start_collect_memory_consumption()
+    max_gen_tokens = DEFAULT_OUTPUT_TOKEN_SIZE if args['infer_count'] is None else args['infer_count']
+    start = time.perf_counter()
+    if args['infer_count'] is not None and args['end_token_stopping'] is False:
+        model.generation_config.eos_token_id = None
+        model.config.eos_token_id = None
+        result = model.generate(
+            **inputs,
+            max_new_tokens=int(max_gen_tokens),
+            num_beams=args['num_beams'],
+            use_cache=True,
+            eos_token_id=None,
+            do_sample=False
+        )
+    else:
+        result = model.generate(
+            **inputs,
+            max_new_tokens=int(max_gen_tokens),
+            streamer=streamer
+        )
+    end = time.perf_counter()
+
+    if len(tm_infer_list) > 2:
+        avg_token = sum(tm_infer_list[2:]) / (len(tm_infer_list) - 2)
+        print(f"warm up Inputs len {inputs['input_ids'].shape[1]} Vision latency: {tm_infer_list[0]:.2f} ms, First token infer latency: {tm_infer_list[1]:.2f} ms, Output len {len(tm_infer_list) - 1}, Avage token infer latency: {avg_token:.2f} ms")
+
+    if len(tm_list) > 2:
+        avg_token = sum(tm_list[2:]) / (len(tm_list) - 2)
+        print(f"warm up Inputs len {inputs['input_ids'].shape[1]} Vision latency: {tm_list[0]:.2f} ms, First token latency: {tm_list[1]:.2f} ms, Output len {len(tm_list) - 1}, Avage token latency: {avg_token:.2f} ms")  
+
+    if (args['mem_consumption'] == 1 and num == 0) or args['mem_consumption'] == 2:
+        mem_consumption.end_collect_momory_consumption()
+        max_rss_mem_consumption, max_shared_mem_consumption, max_uss_mem_consumption = mem_consumption.get_max_memory_consumption()
+        mem_consumption.clear_max_memory_consumption()
+
+    generation_time = end - start
+
+    # TODO: decode time
+    # tok_decode_start = time.perf_counter()
+    # tok_decode_end = time.perf_counter()
+    # tok_decode_time = (tok_decode_end - tok_decode_start) * 1000
+    # Only text_gen need to minus length of input_data, because generated_text may include input_text
+    # num_tokens = 0
+    result_md5_list = []
+    # for bs_idx in range(args['batch_size']):
+    #     if 'sum' not in args['model_name'] and result[bs_idx][:input_token_size].equal(input_tokens[bs_idx]):
+    #         generated_token_size = len(result[bs_idx]) - input_tokens[bs_idx].numel()
+    #     else:
+    #         generated_token_size = len(result[bs_idx])
+    #     # Encoder-decoder models expect the `decoder_input_ids` to start with a special token
+    #     # When counting the output length, subtract 1. The last token does not participate in inference.
+    #     if model.config.is_encoder_decoder and result[bs_idx][0] == model.config.decoder_start_token_id:
+    #         generated_token_size = generated_token_size - 1
+    #     num_tokens += generated_token_size
+    #     if generated_token_size > max_gen_tokens:
+    #         log.error('Output token size is over max output token size!')
+    #     result_text = generated_text[bs_idx]
+    #     if args["output_dir"] is not None:
+    #         llm_bench_utils.output_file.output_gen_text(result_text, args, model_precision, prompt_index, num, bs_idx, proc_id)
+    #     result_md5_list.append(hashlib.new("md5", result_text.encode(), usedforsecurity=False).hexdigest())
+    # if len(md5_list[num]) == 0:
+    #     md5_list[num] = {prompt_index : result_md5_list}
+    # else:
+    #     md5_list[num][prompt_index] = result_md5_list
+    # per_token_time = generation_time * 1000 / (num_tokens / args['batch_size'])
+    per_token_time=0
+    tok_decode_time=0
+
+
+
+    # tm_list = []
+    # tm_infer_list = []
+    # if bench_hook is not None:
+    #     tm_list = bench_hook.get_time_list()
+    #     log.debug('latency of all tokens:')
+    #     [log.debug('[{}]{:.4f}'.format(idx, tm)) for idx, tm in enumerate(tm_list)]
+    #     tm_infer_list = bench_hook.get_time_infer_list()
+    #     log.debug('latency of all infers:')
+    #     [log.debug('[{}]{:.4f}'.format(idx, tm)) for idx, tm in enumerate(tm_infer_list)]
+    #     if args['num_beams'] == 1 and generated_token_size != len(tm_infer_list):
+    #         log.warning(f'Output token size({generated_token_size}) is not equal to infer count({len(tm_infer_list)})')
+    iter_data = gen_iterate_data(
+        num,
+        inputs['input_ids'].shape[1],
+        len(tm_infer_list),
+        len(tm_infer_list) - 1,
+        generation_time,
+        0,
+        result_md5_list,
+        max_rss_mem=max_rss_mem_consumption,
+        max_shared_mem=max_shared_mem_consumption,
+        max_uss_mem=max_uss_mem_consumption,
+        prompt_idx=prompt_index,
+        tokenization_time=(tok_encode_time, tok_decode_time),
+        tm_infer_list=tm_infer_list
+    )
+    # iter_data_list.append(iter_data)
+    # llm_bench_utils.metrics_print.print_metrics(
+    #     num,
+    #     iter_data,
+    #     tm_list,
+    #     tm_infer_list,
+    #     warm_up=(num == 0),
+    #     max_rss_mem=max_rss_mem_consumption,
+    #     max_shared_mem=max_shared_mem_consumption,
+    #     max_uss_mem=max_uss_mem_consumption,
+    #     tokenization_time=(tok_encode_time, tok_decode_time),
+    #     batch_size=args['batch_size']
+    # )
+    # if num > 0:
+    #     prev_md5 = md5_list[num - 1][prompt_index]
+    #     if result_md5_list != prev_md5:
+    #         log.warning(f"[{num}] Prompt[{prompt_index}]'s md5 {result_md5_list} "
+    #                     f"is different from md5 of the {num - 1} iteration {prev_md5}")
+    #         llm_bench_utils.metrics_print.print_generated(num, warm_up=(num == 0), generated=generated_text[0])
+    #         if num == 1:
+    #             # if the device is CPU, throw exception
+    #             if args['devices'].lower().startswith('cpu') is True:
+    #                 assert (result_md5_list == prev_md5)
+    #         else:
+    #             # throw exception
+    #             assert (result_md5_list == prev_md5)
+    # else:
+    #     llm_bench_utils.metrics_print.print_generated(num, warm_up=(num == 0), generated=generated_text[0])
+    # if bench_hook is not None:
+    #     bench_hook.clear_time_list()
+    #     bench_hook.clear_time_infer_list()
+
+def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters):
+    from llm_bench_utils.ov_model_classes import preprocessor
+    tm_list = []
+    tm_infer_list = []
+    vision_infer_list = []
+    model, tokenizer, model_config, pretrain_time, streamer = FW_UTILS[framework].create_minicpmv2_model(model_path, device, tm_list, tm_infer_list, vision_infer_list, **args)
+    preprocessor = preprocessor(config=model_config, tokenizer=tokenizer)
+    model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)
+
+    iter_data_list = []
+    md5_list = {num : {} for num in range(num_iters + 1)}
+    input_text_list = llm_bench_utils.model_utils.get_multimodal_param_from_prompt_file(args)
+    if args['prompt_index'] is None:
+        prompt_idx_list = [prompt_idx for prompt_idx, input_text in enumerate(input_text_list)]
+        text_list = input_text_list
+    else:
+        prompt_idx_list = []
+        text_list = []
+        for i in args['prompt_index']:
+            if 0 <= i < len(input_text_list):
+                text_list.append(input_text_list[i])
+                prompt_idx_list.append(i)
+    if len(input_text_list) == 0:
+        raise RuntimeError('==Failure prompts is empty ==')
+    log.info(f"Numbeams: {args['num_beams']}, benchmarking iter nums(exclude warm-up): {num_iters}, "
+             f'prompt nums: {len(text_list)}, prompt idx: {prompt_idx_list}')
+
+    # if num_iters == 0, just output warm-up data
+    proc_id = os.getpid()
+    if args['subsequent'] is False:
+        for num in range(num_iters + 1):
+            for idx, input_text in enumerate(text_list):
+                # picture = input_text['image']
+                # image = Image.open(picture).convert('RGB')
+                # question = input_text['text']
+                # msgs = [{'role': 'user', 'content': question}]
+                # inputs = preprocessor.get_inputs(image=image, msgs=msgs)
+                run_minicpmv2(input_text, preprocessor, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, streamer, tm_list, tm_infer_list, vision_infer_list)
+    else:
+        # for idx, input_text in enumerate(text_list):
+        for num in range(num_iters + 1):
+            run_minicpmv2(inputs, num, model, tokenizer, args, iter_data_list, md5_list, model_precision, proc_id, streamer)
+
+    # llm_bench_utils.metrics_print.print_average(iter_data_list, prompt_idx_list, args['batch_size'], True)
+    return iter_data_list, pretrain_time
 
 def num_iters_type(x):
     x = int(x)
@@ -820,6 +1033,12 @@ def get_argprser():
         action='store_true',
         help='Stop the generation even output token size does not achieve infer_count or max token size ({DEFAULT_OUTPUT_TOKEN_SIZE}}).'
     )
+    parser.add_argument(
+        '-mi',
+        '--multimodal_input',
+        default='{"image": "./airplane.jpeg", "text": "Describe the content of the image"}',
+        help='The multimodal input for minicpmv2. Must include an image and a text'
+    )
 
     return parser.parse_args()
 
@@ -830,6 +1049,7 @@ CASE_TO_BENCH = {
     'image_cls': run_image_classification,
     'code_gen': run_text_generation_benchmark,
     'ldm_super_resolution': run_ldm_super_resolution_benchmark,
+    'minicpmv2': run_minicpmv2_benchmark,
 }
 
 
@@ -838,6 +1058,10 @@ def main():
     log.basicConfig(format='[ %(levelname)s ] %(message)s', level=os.environ.get("LOGLEVEL", log.INFO), stream=sys.stdout, **logging_kwargs)
     args = get_argprser()
     model_path, framework, model_args, model_name = llm_bench_utils.model_utils.analyze_args(args)
+    print('model_path: ', model_path)
+    print('framework: ', framework)
+    print('model_args: ', model_args)
+    print('model_name: ', model_name)
 
     # Set the device for running OpenVINO backend for torch.compile()
     if model_args['torch_compile_backend']:

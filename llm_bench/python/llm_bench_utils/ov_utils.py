@@ -281,3 +281,52 @@ def is_genai_available(log_msg=False):
             log.warning(ex)
             return False
     return True
+
+def create_minicpmv2_model(model_path, device, tm_list, tm_infer_list, vision_infer_list, **kwargs):
+    import openvino as ov
+    from transformers import TextStreamer
+    default_model_type = DEFAULT_MODEL_CLASSES[kwargs['use_case']]
+    model_type = kwargs.get('model_type', default_model_type)
+    model_class = OV_MODEL_CLASSES_MAPPING.get(model_type, OV_MODEL_CLASSES_MAPPING[default_model_type])
+    token_class = TOKENIZE_CLASSES_MAPPING.get(model_type, TOKENIZE_CLASSES_MAPPING[default_model_type])
+    model_path = Path(model_path)
+    core = ov.Core()
+    VISION_MODEL_OV = Path(f"{model_path}/minicpm-v-2_vision.xml")
+    RESAMPLER_MODEL_OV = Path(f"{model_path}/minicpm-v-2_resampler.xml")
+    EBEDDING_MODEL_OV = Path(f"{model_path}/minicpm-v-2_embedding.xml")
+    LANGUAGE_MODEL_OV = Path(f"{model_path}/minicpm-v-2_openvino-int4.xml")
+
+    model_path_existed = Path(model_path).exists()
+    # load model
+    if not model_path_existed:
+        raise RuntimeError(f'==Failure ==: model path:{model_path} does not exist')
+    else:
+        if kwargs.get("genai", False):
+            raise ValueError(f"OpenVINO GenAI based benchmarking is not available for {model_type}")
+        remote_code = False
+        try:
+            model_config = AutoConfig.from_pretrained(model_path, trust_remote_code=False)
+        except Exception:
+            model_config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+            remote_code = True
+        model_config.patch_size= 14
+        model_config.num_prefix_tokens = 0
+        # load token
+        tokenizer = token_class.from_pretrained(model_path, trust_remote_code=True)
+        start = time.perf_counter()
+        ov_model = model_class(
+            core,
+            VISION_MODEL_OV,
+            RESAMPLER_MODEL_OV,
+            EBEDDING_MODEL_OV,
+            LANGUAGE_MODEL_OV,
+            device,
+            tokenizer=tokenizer,
+            tm_list=tm_list,
+            tm_infer_list=tm_infer_list,
+            vision_infer_list=vision_infer_list)
+        end = time.perf_counter()
+    from_pretrained_time = end - start
+    log.info(f'From pretrained time: {from_pretrained_time:.2f}s')
+    streamer = TextStreamer(tokenizer, skip_special_tokens=True, skip_prompt=True)
+    return ov_model, tokenizer, model_config, from_pretrained_time, streamer
