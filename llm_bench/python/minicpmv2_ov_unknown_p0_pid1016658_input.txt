@@ -1,0 +1,4 @@
+{
+    "image": "./airplane.jpeg",
+    "text": "Describe this the image"
+}

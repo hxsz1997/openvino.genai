@@ -1,16 +1,10 @@
 iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5
-0,llama-2-7b-chat,ov,gpu,4.41018,8,512,12.75279,512,24.9078,109.73839,24.72696,unknown,,,,0,109.25556,24.35128,1,1,0.6521,3.32404,['4814d7f5dd0b45a3c5269b796ac92ba0']
+0,minicpmv2_ov,ov,GPU,6.88704,678,110,15.47416,110,140.67418,12356.22163,27.88215,unknown,,,,0,382.92314,26.89184,1,1,1.34786,14.87426,['547f74b8bfe2fae062204ea91b36241e']
+1,minicpmv2_ov,ov,GPU,,678,110,15.32728,110,139.3389,11652.4584,32.85124,unknown,,,,0,235.52206,31.56006,1,1,1.33136,11.6713,['547f74b8bfe2fae062204ea91b36241e']
+avg,minicpmv2_ov,ov,GPU,,678.0,110.0,15.32728,110.0,139.3389,11652.4584,32.85124,unknown,,,,0,235.52206,31.56006,1,1,1.33136,11.6713,['547f74b8bfe2fae062204ea91b36241e']
+mini,minicpmv2_ov,ov,GPU,,678,110,15.32728,110,139.3389,11652.4584,32.85124,unknown,,,,0,235.52206,31.56006,1,1,1.33136,11.6713,['547f74b8bfe2fae062204ea91b36241e']
+median,minicpmv2_ov,ov,GPU,,678.0,110.0,15.32728,110.0,139.3389,11652.4584,32.85124,unknown,,,,0,235.52206,31.56006,1,1,1.33136,11.6713,['547f74b8bfe2fae062204ea91b36241e']
 ,,,,,,,,,,,,,,,,,,,,,,,
-input_size: Input token size,,,,,,,,,,,,,,,,,,,,,,,
-output_size: Text/Code generation models: generated text token size,,,,,,,,,,,,,,,,,,,,,,,
-infer_count: Limit the Text/Code generation models' output token size,,,,,,,,,,,,,,,,,,,,,,,
-latency: Text/Code generation models: ms/token. Output token size / generation time,,,,,,,,,,,,,,,,,,,,,,,
-1st_latency: Text/Code generation models: Fisrt token latency,,,,,,,,,,,,,,,,,,,,,,,
-2nd_avg_latency: Text/Code generation models: Other tokens (exclude first token) latency,,,,,,,,,,,,,,,,,,,,,,,
-1st_infer_latency: Text/Code generation models: Fisrt inference latency,,,,,,,,,,,,,,,,,,,,,,,
-2nd_infer_avg_latency: Text/Code generation models: Other inferences (exclude first inference) latency,,,,,,,,,,,,,,,,,,,,,,,
-result_md5: MD5 of generated text,,,,,,,,,,,,,,,,,,,,,,,
-prompt_idx: Index of prompts,,,,,,,,,,,,,,,,,,,,,,,
 tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,
 detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,
 pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,

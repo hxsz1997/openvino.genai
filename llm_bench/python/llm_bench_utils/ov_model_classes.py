@@ -870,7 +870,7 @@ class OVMiniCPMForCausalLM(GenerationMixin):
         self.request.wait()
         end = time.perf_counter()
 
-        generation_time = (end - start) * 1000
+        generation_time = end - start
         self.tm_infer_list.append(generation_time)
 
         logits = torch.from_numpy(self.request.get_tensor(self.output_names[0]).data)
@@ -885,7 +885,7 @@ class OVMiniCPMForCausalLM(GenerationMixin):
         self.past_len += inputs["inputs_embeds"].shape[1]
 
         toc = time.perf_counter()
-        self.tm_list.append((toc - tic) * 1000)
+        self.tm_list.append(toc - tic)
 
         return CausalLMOutputWithPast(logits=logits, past_key_values=past_key_values)
 
@@ -951,8 +951,8 @@ class OVMiniCPMForCausalLM(GenerationMixin):
         end = time.perf_counter()
 
         prepareinput_time = (end - start) * 1000
-        self.tm_list.append(prepareinput_time)
-        self.tm_infer_list.append(prepareinput_time)
+        # self.tm_list.append(prepareinput_time)
+        # self.tm_infer_list.append(prepareinput_time)
 
         return inputs
 

@@ -2,7 +2,7 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import os
-
+import json
 
 def save_text_to_file(input_text, text_file_name, args):
     if args['output_dir'] is not None:
@@ -12,9 +12,10 @@ def save_text_to_file(input_text, text_file_name, args):
     else:
         out_path = '.'
     save_path = out_path + os.sep + text_file_name
-    input_text_file = open(save_path, 'w')
-    input_text_file.write(input_text)
-    input_text_file.close()
+    if isinstance(input_text, dict):
+        input_text = json.dumps(input_text, indent=4)
+    with open(save_path, 'w') as input_text_file:
+        input_text_file.write(input_text)
 
 
 def save_image_file(img, img_file_name, args):

@@ -284,7 +284,6 @@ def is_genai_available(log_msg=False):
 
 def create_minicpmv2_model(model_path, device, tm_list, tm_infer_list, vision_infer_list, **kwargs):
     import openvino as ov
-    from transformers import TextStreamer
     default_model_type = DEFAULT_MODEL_CLASSES[kwargs['use_case']]
     model_type = kwargs.get('model_type', default_model_type)
     model_class = OV_MODEL_CLASSES_MAPPING.get(model_type, OV_MODEL_CLASSES_MAPPING[default_model_type])
@@ -328,5 +327,4 @@ def create_minicpmv2_model(model_path, device, tm_list, tm_infer_list, vision_in
         end = time.perf_counter()
     from_pretrained_time = end - start
     log.info(f'From pretrained time: {from_pretrained_time:.2f}s')
-    streamer = TextStreamer(tokenizer, skip_special_tokens=True, skip_prompt=True)
-    return ov_model, tokenizer, model_config, from_pretrained_time, streamer
+    return ov_model, tokenizer, model_config, from_pretrained_time
