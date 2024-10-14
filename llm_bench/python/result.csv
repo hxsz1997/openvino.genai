@@ -1,0 +1,15 @@
+iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5
+0,minicpmv2_ov,ov,GPU,7.02242,678,110,15.53278,110,141.20707,12426.76956,27.39836,unknown,,,,0,382.8893,25.81073,1,1,1.3255,13.8095,['547f74b8bfe2fae062204ea91b36241e']
+1,minicpmv2_ov,ov,GPU,,678,110,14.80245,110,134.56769,11718.35106,27.51411,unknown,,,,0,236.69588,26.42234,1,1,1.30984,13.37757,['547f74b8bfe2fae062204ea91b36241e']
+2,minicpmv2_ov,ov,GPU,,678,110,14.75431,110,134.13006,11703.88403,27.05755,unknown,,,,0,234.14455,25.76657,1,1,1.30065,11.95202,['547f74b8bfe2fae062204ea91b36241e']
+avg,minicpmv2_ov,ov,GPU,,678.0,110.0,14.77838,110.0,134.34887,11711.11755,27.28583,unknown,,,,0,235.42022,26.09445,1,1,1.30525,12.66479,['547f74b8bfe2fae062204ea91b36241e']
+mini,minicpmv2_ov,ov,GPU,,678,110,14.75431,110,134.13006,11703.88403,27.05755,unknown,,,,0,234.14455,25.76657,1,1,1.30065,11.95202,['547f74b8bfe2fae062204ea91b36241e']
+median,minicpmv2_ov,ov,GPU,,678.0,110.0,14.77838,110.0,134.34887,11711.11755,27.28583,unknown,,,,0,235.42022,26.09445,1,1,1.30525,12.66479,['547f74b8bfe2fae062204ea91b36241e']
+,,,,,,,,,,,,,,,,,,,,,,,
+tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,
+detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,
+pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,
+generation_time: Time for one interaction. (e.g. The duration of  answering one question or generating one picture),,,,,,,,,,,,,,,,,,,,,,,
+iteration=0: warm-up; iteration=avg: average (exclude warm-up);iteration=mini: minimum value (exclude warm-up);iteration=median: median value (exclude warm-up);,,,,,,,,,,,,,,,,,,,,,,,
+max_rss_mem: max rss memory consumption;,,,,,,,,,,,,,,,,,,,,,,,
+max_shared_mem: max shared memory consumption;,,,,,,,,,,,,,,,,,,,,,,,

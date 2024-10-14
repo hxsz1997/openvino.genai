@@ -77,16 +77,24 @@ def gen_iterate_data(
     return iter_data
 
 
-def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_index, bench_hook, model_precision, proc_id):
+def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_index, model_precision, proc_id, bench_hook=None, preprocessor=None, tm_list=None, tm_infer_list=None, vision_infer_list=None):
     set_seed(args['seed'])
     input_text_list = [input_text] * args['batch_size']
+    if args['model_name'] == 'minicpmv2_ov':
+        picture = input_text['image']
+        image = Image.open(picture).convert('RGB')
+        question = input_text['text']
+        msgs = [{'role': 'user', 'content': question}]
     if args["output_dir"] is not None and num == 0:
         for bs_index, in_text in enumerate(input_text_list):
             llm_bench_utils.output_file.output_input_text(in_text, args, model_precision, prompt_index, bs_index, proc_id)
-    tok_encode_start = time.perf_counter()
-    input_data = tokenizer(input_text_list, return_tensors='pt')
-    tok_encode_end = time.perf_counter()
-    tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
+    if args['model_name'] == 'minicpmv2_ov':
+        input_data, tok_encode_time = preprocessor.get_inputs(image=image, msgs=msgs)
+    else:
+        tok_encode_start = time.perf_counter()
+        input_data = tokenizer(input_text_list, return_tensors='pt')
+        tok_encode_end = time.perf_counter()
+        tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
     input_data.pop('token_type_ids', None)
     # Remove `token_type_ids` from inputs
     input_tokens = input_data['input_ids'] if 'input_ids' in input_data else input_data
@@ -162,8 +170,9 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
         md5_list[num][prompt_index] = result_md5_list
     per_token_time = generation_time * 1000 / (num_tokens / args['batch_size'])
     print("========num_tokens=======", num_tokens)
-    tm_list = []
-    tm_infer_list = []
+    if args['model_name'] != 'minicpmv2_ov':
+        tm_list = []
+        tm_infer_list = []
     if bench_hook is not None:
         tm_list = bench_hook.get_time_list()
         log.debug('latency of all tokens:')
@@ -173,8 +182,8 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
         [log.debug('[{}]{:.4f}'.format(idx, tm)) for idx, tm in enumerate(tm_infer_list)]
         if args['num_beams'] == 1 and generated_token_size != len(tm_infer_list):
             log.warning(f'Output token size({generated_token_size}) is not equal to infer count({len(tm_infer_list)})')
-        print("========tm_list=======", len(tm_list))
-        print("========tm_infer_list=======", len(tm_infer_list))
+    print("========tm_list=======", len(tm_list))
+    print("========tm_infer_list=======", len(tm_infer_list))
     iter_data = gen_iterate_data(
         num,
         input_token_size * args['batch_size'],
@@ -220,7 +229,7 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
         llm_bench_utils.metrics_print.print_generated(num, warm_up=(num == 0), generated=generated_text[0])
     if bench_hook is not None:
         bench_hook.clear_time_list()
-        bench_hook.clear_time_infer_list()
+        bench_hook.clear_time_infer_list()    
 
 
 def run_text_generation_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_index, streamer, model_precision, proc_id):
@@ -433,11 +442,23 @@ def run_text_generation_genai_with_stream(input_text, num, model, tokenizer, arg
 
 
 def run_text_generation_benchmark(model_path, framework, device, args, num_iters):
-    model, tokenizer, pretrain_time, bench_hook, use_genai = FW_UTILS[framework].create_text_gen_model(model_path, device, **args)
+    from llm_bench_utils.ov_model_classes import preprocessor
+    tm_list = []
+    tm_infer_list = []
+    vision_infer_list = []
+    if args['model_name'] == 'minicpmv2_ov':
+        from llm_bench_utils.ov_model_classes import preprocessor
+        model, tokenizer, model_config, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, tm_list, tm_infer_list, vision_infer_list, **args)
+        preprocessor = preprocessor(config=model_config, tokenizer=tokenizer)
+    else:
+        model, tokenizer, pretrain_time, bench_hook, use_genai = FW_UTILS[framework].create_text_gen_model(model_path, device, **args)
     model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)
     iter_data_list = []
     md5_list = {num : {} for num in range(num_iters + 1)}
-    input_text_list = llm_bench_utils.model_utils.get_prompts(args)
+    if args['model_name'] == 'minicpmv2_ov':
+        input_text_list = llm_bench_utils.model_utils.get_multimodal_param_from_prompt_file(args)
+    else:
+        input_text_list = llm_bench_utils.model_utils.get_prompts(args)
     if args['prompt_index'] is None:
         prompt_idx_list = [prompt_idx for prompt_idx, input_text in enumerate(input_text_list)]
         text_list = input_text_list
@@ -454,7 +475,7 @@ def run_text_generation_benchmark(model_path, framework, device, args, num_iters
              f'prompt nums: {len(text_list)}, prompt idx: {prompt_idx_list}')
 
     # if num_iters == 0, just output warm-up data
-    if not use_genai:
+    if (args['model_name'] != 'minicpmv2_ov' and not use_genai) or args['model_name'] == 'minicpmv2_ov':
         text_gen_fn = run_text_generation
     elif bench_hook is not None:
         text_gen_fn = run_text_generation_genai_with_stream
@@ -466,13 +487,19 @@ def run_text_generation_benchmark(model_path, framework, device, args, num_iters
             for idx, input_text in enumerate(text_list):
                 if num == 0:
                     log.info(f'[warm-up] Input text: {input_text}')
-                text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], bench_hook, model_precision, proc_id)
+                if args['model_name'] == 'minicpmv2_ov':
+                    text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, preprocessor=preprocessor, tm_list=tm_list, tm_infer_list=tm_infer_list, vision_infer_list=vision_infer_list)
+                else:
+                    text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, bench_hook)
     else:
         for idx, input_text in enumerate(text_list):
             for num in range(num_iters + 1):
                 if num == 0:
                     log.info(f'[warm-up] Input text: {input_text}')
-                text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], bench_hook, model_precision, proc_id)
+                if args['model_name'] == 'minicpmv2_ov':
+                    text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, preprocessor=preprocessor, tm_list=tm_list, tm_infer_list=tm_infer_list, vision_infer_list=vision_infer_list)
+                else:
+                    text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, bench_hook)
 
     llm_bench_utils.metrics_print.print_average(iter_data_list, prompt_idx_list, args['batch_size'], True)
     return iter_data_list, pretrain_time
@@ -723,12 +750,12 @@ def run_minicpmv2(input_text, preprocessor, num, model, tokenizer, args, iter_da
     if args["output_dir"] is not None and num == 0:
         for bs_index, in_text in enumerate(input_text_list):
             llm_bench_utils.output_file.output_input_text(in_text, args, model_precision, prompt_index, bs_index, proc_id)
-    inputs, tok_encode_time = preprocessor.get_inputs(image=image, msgs=msgs)
+    input_data, tok_encode_time = preprocessor.get_inputs(image=image, msgs=msgs)
     print("====tok_encode_time in def run_minicpmv2===", tok_encode_time)
 
-    inputs.pop('token_type_ids', None)
+    input_data.pop('token_type_ids', None)
     # Remove `token_type_ids` from inputs
-    input_tokens = inputs['input_ids'] if 'input_ids' in inputs else inputs
+    input_tokens = input_data['input_ids'] if 'input_ids' in input_data else input_data
     input_token_size = input_tokens[0].numel()
     if args['batch_size'] > 1:
         out_str = '[warm-up]' if num == 0 else '[{}]'.format(num)
@@ -748,9 +775,22 @@ def run_minicpmv2(input_text, preprocessor, num, model, tokenizer, args, iter_da
     if args['infer_count'] is not None and args['end_token_stopping'] is False:
         model.generation_config.eos_token_id = None
         model.config.eos_token_id = None
-        result = model.generate(**inputs, max_new_tokens=int(max_gen_tokens), eos_token_id=None)
+        result = model.generate(
+            **input_data,
+            max_new_tokens=int(max_gen_tokens),
+            num_beams=args['num_beams'],
+            use_cache=True,
+            eos_token_id=None,
+            do_sample=False
+        )
     else:
-        result = model.generate(**inputs, max_new_tokens=int(max_gen_tokens))
+        result = model.generate(
+            **input_data,
+            max_new_tokens=int(max_gen_tokens),
+            num_beams=args['num_beams'],
+            use_cache=True,
+            do_sample=False
+        )
     end = time.perf_counter()
 
     # if len(tm_infer_list) > 2:
@@ -813,11 +853,11 @@ def run_minicpmv2(input_text, preprocessor, num, model, tokenizer, args, iter_da
             log.warning(f'Output token size({generated_token_size}) is not equal to infer count({len(tm_infer_list)})')
     if len(tm_infer_list) > 1:
         avg_token = sum(tm_infer_list[1:]) / (len(tm_infer_list) - 1)
-        print(f"warm up Inputs len {inputs['input_ids'].shape[1]}, First token infer latency: {tm_infer_list[0]:.2f} ms, Output len {len(tm_infer_list)}, Avage token infer latency: {avg_token:.2f} ms")
+        print(f"warm up Inputs len {input_data['input_ids'].shape[1]}, First token infer latency: {tm_infer_list[0]:.2f} ms, Output len {len(tm_infer_list)}, Avage token infer latency: {avg_token:.2f} ms")
 
     if len(tm_list) > 1:
         avg_token = sum(tm_list[1:]) / (len(tm_list) - 1)
-        print(f"warm up Inputs len {inputs['input_ids'].shape[1]}, First token latency: {tm_list[0]:.2f} ms, Output len {len(tm_list)}, Avage token latency: {avg_token:.2f} ms")  
+        print(f"warm up Inputs len {input_data['input_ids'].shape[1]}, First token latency: {tm_list[0]:.2f} ms, Output len {len(tm_list)}, Avage token latency: {avg_token:.2f} ms")  
 
     if len(vision_infer_list) > 2:
         sum_vision = sum(vision_infer_list[::2])
@@ -1047,7 +1087,7 @@ CASE_TO_BENCH = {
     'image_cls': run_image_classification,
     'code_gen': run_text_generation_benchmark,
     'ldm_super_resolution': run_ldm_super_resolution_benchmark,
-    'minicpmv2': run_minicpmv2_benchmark,
+    'minicpmv2': run_text_generation_benchmark,
 }
 
 
