@@ -1,15 +1,27 @@
-iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5
-0,minicpmv2_ov,ov,GPU,7.02242,678,110,15.53278,110,141.20707,12426.76956,27.39836,unknown,,,,0,382.8893,25.81073,1,1,1.3255,13.8095,['547f74b8bfe2fae062204ea91b36241e']
-1,minicpmv2_ov,ov,GPU,,678,110,14.80245,110,134.56769,11718.35106,27.51411,unknown,,,,0,236.69588,26.42234,1,1,1.30984,13.37757,['547f74b8bfe2fae062204ea91b36241e']
-2,minicpmv2_ov,ov,GPU,,678,110,14.75431,110,134.13006,11703.88403,27.05755,unknown,,,,0,234.14455,25.76657,1,1,1.30065,11.95202,['547f74b8bfe2fae062204ea91b36241e']
-avg,minicpmv2_ov,ov,GPU,,678.0,110.0,14.77838,110.0,134.34887,11711.11755,27.28583,unknown,,,,0,235.42022,26.09445,1,1,1.30525,12.66479,['547f74b8bfe2fae062204ea91b36241e']
-mini,minicpmv2_ov,ov,GPU,,678,110,14.75431,110,134.13006,11703.88403,27.05755,unknown,,,,0,234.14455,25.76657,1,1,1.30065,11.95202,['547f74b8bfe2fae062204ea91b36241e']
-median,minicpmv2_ov,ov,GPU,,678.0,110.0,14.77838,110.0,134.34887,11711.11755,27.28583,unknown,,,,0,235.42022,26.09445,1,1,1.30525,12.66479,['547f74b8bfe2fae062204ea91b36241e']
-,,,,,,,,,,,,,,,,,,,,,,,
-tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,
-detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,
-pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,
-generation_time: Time for one interaction. (e.g. The duration of  answering one question or generating one picture),,,,,,,,,,,,,,,,,,,,,,,
-iteration=0: warm-up; iteration=avg: average (exclude warm-up);iteration=mini: minimum value (exclude warm-up);iteration=median: median value (exclude warm-up);,,,,,,,,,,,,,,,,,,,,,,,
-max_rss_mem: max rss memory consumption;,,,,,,,,,,,,,,,,,,,,,,,
-max_shared_mem: max shared memory consumption;,,,,,,,,,,,,,,,,,,,,,,,
+iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5,vision_latency(ms),sampler_latency(ms)
+0,minicpmv2_ov,ov,GPU,6.84777,678,110,15.72379,110,142.94355,12365.84019,29.85033,unknown,5143.37109,2635.62891,2507.74219,0,381.2973,28.51307,1,1,1.35669,15.23504,['f1eec9a267f0696e21b5c005310a492f'],11796.84607,178.89313
+1,minicpmv2_ov,ov,GPU,,678,110,14.53056,110,132.09597,11572.687,26.32503,unknown,,,,0,237.19706,25.1721,1,1,1.33548,17.16981,['f1eec9a267f0696e21b5c005310a492f'],11263.86523,63.70158
+2,minicpmv2_ov,ov,GPU,,678,110,14.51504,110,131.95487,11544.4588,26.53583,unknown,,,,0,235.97091,25.61318,1,1,1.31188,19.74879,['f1eec9a267f0696e21b5c005310a492f'],11237.08249,63.64521
+avg,minicpmv2_ov,ov,GPU,,678.0,110.0,14.5228,110.0,132.02542,11558.5729,26.43043,unknown,,,,0,236.58399,25.39264,1,1,1.32368,18.4593,['f1eec9a267f0696e21b5c005310a492f'],11250.47386,63.6734
+mini,minicpmv2_ov,ov,GPU,,678,110,14.51504,110,131.95487,11544.4588,26.32503,unknown,,,,0,235.97091,25.1721,1,1,1.31188,17.16981,['f1eec9a267f0696e21b5c005310a492f'],11237.08249,63.64521
+median,minicpmv2_ov,ov,GPU,,678.0,110.0,14.5228,110.0,132.02542,11558.5729,26.43043,unknown,,,,0,236.58399,25.39264,1,1,1.32368,18.4593,['f1eec9a267f0696e21b5c005310a492f'],11250.47386,63.6734
+,,,,,,,,,,,,,,,,,,,,,,,,,
+input_size: Input token size,,,,,,,,,,,,,,,,,,,,,,,,,
+output_size: Text/Code generation models: generated text token size,,,,,,,,,,,,,,,,,,,,,,,,,
+infer_count: Limit the Text/Code generation models' output token size,,,,,,,,,,,,,,,,,,,,,,,,,
+latency: Text/Code generation models: ms/token. Output token size / generation time,,,,,,,,,,,,,,,,,,,,,,,,,
+1st_latency: Text/Code generation models: Fisrt token latency,,,,,,,,,,,,,,,,,,,,,,,,,
+2nd_avg_latency: Text/Code generation models: Other tokens (exclude first token) latency,,,,,,,,,,,,,,,,,,,,,,,,,
+1st_infer_latency: Text/Code generation models: Fisrt inference latency,,,,,,,,,,,,,,,,,,,,,,,,,
+2nd_infer_avg_latency: Text/Code generation models: Other inferences (exclude first inference) latency,,,,,,,,,,,,,,,,,,,,,,,,,
+result_md5: MD5 of generated text,,,,,,,,,,,,,,,,,,,,,,,,,
+prompt_idx: Index of prompts,,,,,,,,,,,,,,,,,,,,,,,,,
+vision_latency: minicpmv2 models: vision latency in multimodal input preparation,,,,,,,,,,,,,,,,,,,,,,,,,
+sampler_latency: minicpmv2 models: sampler latency in multimodal input preparation,,,,,,,,,,,,,,,,,,,,,,,,,
+tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,,,
+detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,,,
+pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,,,
+generation_time: Time for one interaction. (e.g. The duration of  answering one question or generating one picture),,,,,,,,,,,,,,,,,,,,,,,,,
+iteration=0: warm-up; iteration=avg: average (exclude warm-up);iteration=mini: minimum value (exclude warm-up);iteration=median: median value (exclude warm-up);,,,,,,,,,,,,,,,,,,,,,,,,,
+max_rss_mem: max rss memory consumption;,,,,,,,,,,,,,,,,,,,,,,,,,
+max_shared_mem: max shared memory consumption;,,,,,,,,,,,,,,,,,,,,,,,,,

@@ -19,6 +19,8 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
         shared_mem = iter_data['max_shared_mem_consumption']
         tokenization_time = iter_data['tokenization_time']
         detokenization_time = iter_data['detokenization_time']
+        vision_latency = iter_data['vision_latency']
+        sampler_latency = iter_data['sampler_latency']
 
         result_md5 = []
         for idx_md5 in range(len(iter_data['result_md5'])):
@@ -42,6 +44,8 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
             'prompt_idx': iter_data['prompt_idx'],
             'tokenization_time': round(tokenization_time, 5) if tokenization_time != '' else tokenization_time,
             'detokenization_time': round(detokenization_time, 5) if detokenization_time != '' else detokenization_time,
+            'vision_latency': round(vision_latency, 5) if vision_latency != '' else vision_latency,
+            'sampler_latency': round(sampler_latency, 5) if sampler_latency != '' else sampler_latency,
         }
 
         result.append(res_data)

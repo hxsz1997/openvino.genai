@@ -52,7 +52,9 @@ def gen_iterate_data(
     max_shared_mem='',
     max_uss_mem='',
     prompt_idx='',
-    tokenization_time=[]
+    tokenization_time=[],
+    vision_latency='',
+    sampler_latency='',
 ):
     iter_data = {}
     iter_data['iteration'] = iter_idx
@@ -74,6 +76,8 @@ def gen_iterate_data(
     iter_data['prompt_idx'] = prompt_idx
     iter_data['tokenization_time'] = tokenization_time[0] if len(tokenization_time) > 0 else ''
     iter_data['detokenization_time'] = tokenization_time[1] if len(tokenization_time) > 1 else ''
+    iter_data['vision_latency'] = vision_latency
+    iter_data['sampler_latency'] = sampler_latency
     return iter_data
 
 
@@ -141,7 +145,10 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
 
     generation_time = end - start
     tok_decode_start = time.perf_counter()
-    generated_text = tokenizer.batch_decode(result)
+    if args['model_name'] == 'minicpmv2_ov':
+        generated_text = tokenizer.batch_decode(result, skip_special_tokens=True)
+    else:
+        generated_text = tokenizer.batch_decode(result)
     print("generated_text============", generated_text)
     tok_decode_end = time.perf_counter()
     tok_decode_time = (tok_decode_end - tok_decode_start) * 1000
@@ -184,6 +191,12 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
             log.warning(f'Output token size({generated_token_size}) is not equal to infer count({len(tm_infer_list)})')
     print("========tm_list=======", len(tm_list))
     print("========tm_infer_list=======", len(tm_infer_list))
+    if args['model_name'] == 'minicpmv2_ov':
+        if len(vision_infer_list) > 2:
+            vision_latency = sum(vision_infer_list[::2])
+            sampler_latency = sum(vision_infer_list[1::2])
+        else:
+            raise RuntimeError('== Length of vision_infer_list must be greater than 2 ==')
     iter_data = gen_iterate_data(
         num,
         input_token_size * args['batch_size'],
@@ -196,7 +209,9 @@ def run_text_generation(input_text, num, model, tokenizer, args, iter_data_list,
         max_shared_mem=max_shared_mem_consumption,
         max_uss_mem=max_uss_mem_consumption,
         prompt_idx=prompt_index,
-        tokenization_time=(tok_encode_time, tok_decode_time)
+        tokenization_time=(tok_encode_time, tok_decode_time),
+        vision_latency=vision_latency if args['model_name'] == 'minicpmv2_ov' else '',
+        sampler_latency=sampler_latency if args['model_name'] == 'minicpmv2_ov' else ''
     )
     iter_data_list.append(iter_data)
     llm_bench_utils.metrics_print.print_metrics(

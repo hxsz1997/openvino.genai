@@ -38,6 +38,21 @@ def output_comments(result, use_case, writer):
         comment_list.append('1st_infer_latency: Same as 1st_latency')
         comment_list.append('2nd_infer_avg_latency: Same as 2nd_avg_latency')
         comment_list.append('prompt_idx: Image Index')
+    if use_case == 'minicpmv2':
+        comment_list.append('input_size: Input token size')
+        comment_list.append('output_size: Text/Code generation models: generated text token size')
+        comment_list.append("infer_count: Limit the Text/Code generation models' output token size")
+        comment_list.append('latency: Text/Code generation models: ms/token. Output token size / generation time')
+        comment_list.append('1st_latency: Text/Code generation models: Fisrt token latency')
+        comment_list.append('2nd_avg_latency: Text/Code generation models: Other tokens (exclude first token) latency')
+        comment_list.append('1st_infer_latency: Text/Code generation models: Fisrt inference latency')
+        comment_list.append('2nd_infer_avg_latency: Text/Code generation models: Other inferences (exclude first inference) latency')
+        comment_list.append('result_md5: MD5 of generated text')
+        comment_list.append('prompt_idx: Index of prompts')
+        comment_list.append('vision_latency: minicpmv2 models: vision latency in multimodal input preparation')
+        comment_list.append('sampler_latency: minicpmv2 models: sampler latency in multimodal input preparation')
+
+
     comment_list.append('tokenization_time: Tokenizer encode time')
     comment_list.append('detokenization_time: Tokenizer decode time')
     comment_list.append('pretrain_time: Total time of load model and compile model')
@@ -68,7 +83,7 @@ def output_avg_min_median(iter_data_list):
             if iter_data['prompt_idx'] == prompt_idx and iter_data['iteration'] > 0:
                 same_prompt_datas.append(iter_data)
         key_word = ['input_size', 'infer_count', 'generation_time', 'output_size', 'latency', 'first_token_latency', 'other_tokens_avg_latency',
-                    'first_token_infer_latency', 'other_tokens_infer_avg_latency', 'tokenization_time', 'detokenization_time']
+                    'first_token_infer_latency', 'other_tokens_infer_avg_latency', 'vision_latency', 'sampler_latency', 'tokenization_time', 'detokenization_time']
         if len(same_prompt_datas) > 0:
             iters_idx = ['avg', 'mini', 'median']
             result[prompt_idx] = [copy.deepcopy(same_prompt_datas[0]) for i in range(3)]
@@ -93,6 +108,8 @@ def gen_data_to_csv(result, iter_data, pretrain_time):
     other_latency = iter_data['other_tokens_avg_latency']
     first_token_infer_latency = iter_data['first_token_infer_latency']
     other_token_infer_latency = iter_data['other_tokens_infer_avg_latency']
+    vision_latency = iter_data['vision_latency']
+    sampler_latency = iter_data['sampler_latency']
     rss_mem = iter_data['max_rss_mem_consumption']
     uss_mem = iter_data['max_uss_mem_consumption']
     shared_mem = iter_data['max_shared_mem_consumption']
@@ -106,6 +123,8 @@ def gen_data_to_csv(result, iter_data, pretrain_time):
     result['output_size'] = iter_data['output_size']
     result['latency(ms)'] = round(latency, 5) if latency != '' else latency
     result['result_md5'] = iter_data['result_md5']
+    result['vision_latency(ms)'] = round(vision_latency, 5) if vision_latency != '' else vision_latency
+    result['sampler_latency(ms)'] = round(sampler_latency, 5) if sampler_latency != '' else sampler_latency
     if first_latency < 0:
         result['1st_latency(ms)'] = 'NA'
     else:
@@ -156,6 +175,8 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
         'tokenization_time',
         'detokenization_time',
         'result_md5',
+        'vision_latency(ms)',
+        'sampler_latency(ms)',
     ]
     out_file = Path(report_file)
 
