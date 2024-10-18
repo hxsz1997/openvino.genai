@@ -294,8 +294,11 @@ def create_minicpmv2_model(model_path, device, **kwargs):
     else:
         if kwargs.get("genai", False):
             raise ValueError(f"OpenVINO GenAI based benchmarking is not available for {model_type}")
+        start = time.perf_counter()
         ov_model, tokenizer = init_model(core, model_path, llm_path, image_emb_path, resampler_path, device)
-    return ov_model, tokenizer
+        end = time.perf_counter()
+        from_pretrained_time = end - start
+    return ov_model, tokenizer, from_pretrained_time
 
 
 def is_genai_available(log_msg=False):

@@ -747,6 +747,8 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
         self.request.start_async(inputs, share_inputs=True)
         self.request.wait()
         self.llm_times.append(time.perf_counter() - start)
+        if len(self.llm_times) == 50:
+            print("======self.llm_times=====", self.llm_times)
         logits = self.request.get_tensor("logits").data
         logits = torch.from_numpy(logits).to(self.device)
         past_key_values = ((),)
@@ -814,6 +816,9 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
+
+    def get_llm_times(self):
+        return self.llm_times
 
 
 class OvMiniCPMV:
@@ -1134,9 +1139,14 @@ class OvMiniCPMV:
             prompts_lists.append(processor.tokenizer.apply_chat_template(copy_msgs, tokenize=False, add_generation_prompt=True))
             input_images_lists.append(images)
 
+        tok_encode_start = time.perf_counter()
         inputs = processor(
             prompts_lists, input_images_lists, max_slice_nums=max_slice_nums, use_image_id=use_image_id, return_tensors="pt", max_length=max_inp_length
         )
+        tok_encode_end = time.perf_counter()
+        tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
+        input_token_size = inputs['input_ids'][0].numel()
+        # print("=========input_token_size=========", inputs['input_ids'][0].numel())
 
         if sampling:
             generation_config = {"top_p": 0.8, "top_k": 100, "temperature": 0.7, "do_sample": True, "repetition_penalty": 1.05}
@@ -1170,14 +1180,17 @@ class OvMiniCPMV:
                         text = text.replace(term, "")
                     yield text
 
-            return stream_gen()
+            return stream_gen(), tok_encode_time, input_token_size
 
         else:
             if batched:
                 answer = res
             else:
                 answer = res[0]
-            return answer
+            return answer, tok_encode_time, input_token_size
+    
+    def get_llm_times(self):
+        return self.llm.get_llm_times()
 
 
 def init_model(core, model_dir, llm_model_dir, image_emb_path, resampler_path, device):

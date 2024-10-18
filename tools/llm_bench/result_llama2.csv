@@ -1,10 +1,9 @@
 iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5
-0,llama-2-7b-chat,ov,gpu,7.72327,8,512,13.20984,512,25.80047,357.11897,25.10929,unknown,4936.83594,649.17969,4287.65625,0,352.44606,24.72364,1,1,0.92378,0.33273,['4814d7f5dd0b45a3c5269b796ac92ba0']
-1,llama-2-7b-chat,ov,gpu,,8,512,12.66743,512,24.74107,35.4214,24.70115,unknown,,,,0,35.09692,24.30055,1,1,0.12888,0.27468,['4814d7f5dd0b45a3c5269b796ac92ba0']
-2,llama-2-7b-chat,ov,gpu,,8,512,11.80913,512,23.06471,31.62637,23.03249,unknown,,,,0,31.36647,22.76975,1,1,0.12084,0.29664,['4814d7f5dd0b45a3c5269b796ac92ba0']
-avg,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.23828,512.0,23.90289,33.52388,23.86682,unknown,,,,0,33.2317,23.53515,1,1,0.12486,0.28566,['4814d7f5dd0b45a3c5269b796ac92ba0']
-mini,llama-2-7b-chat,ov,gpu,,8,512,11.80913,512,23.06471,31.62637,23.03249,unknown,,,,0,31.36647,22.76975,1,1,0.12084,0.27468,['4814d7f5dd0b45a3c5269b796ac92ba0']
-median,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.23828,512.0,23.90289,33.52388,23.86682,unknown,,,,0,33.2317,23.53515,1,1,0.12486,0.28566,['4814d7f5dd0b45a3c5269b796ac92ba0']
+0,llama-2-7b-chat,ov,gpu,7.04182,8,512,12.82255,512,25.04403,109.9086,24.8579,unknown,,,,0,108.97327,24.45148,1,1,0.63948,0.60076,['4814d7f5dd0b45a3c5269b796ac92ba0']
+1,llama-2-7b-chat,ov,gpu,,8,512,12.6841,512,24.77364,37.54752,24.72968,unknown,,,,0,37.11923,24.33675,1,1,0.27109,0.52675,['4814d7f5dd0b45a3c5269b796ac92ba0']
+avg,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.6841,512.0,24.77364,37.54752,24.72968,unknown,,,,0,37.11923,24.33675,1,1,0.27109,0.52675,['4814d7f5dd0b45a3c5269b796ac92ba0']
+mini,llama-2-7b-chat,ov,gpu,,8,512,12.6841,512,24.77364,37.54752,24.72968,unknown,,,,0,37.11923,24.33675,1,1,0.27109,0.52675,['4814d7f5dd0b45a3c5269b796ac92ba0']
+median,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.6841,512.0,24.77364,37.54752,24.72968,unknown,,,,0,37.11923,24.33675,1,1,0.27109,0.52675,['4814d7f5dd0b45a3c5269b796ac92ba0']
 ,,,,,,,,,,,,,,,,,,,,,,,
 input_size: Input token size,,,,,,,,,,,,,,,,,,,,,,,
 output_size: Text/Code generation models: generated text token size,,,,,,,,,,,,,,,,,,,,,,,

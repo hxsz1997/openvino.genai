@@ -730,13 +730,23 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     image = Image.open(image)
     question = input_text['text']
     msgs = [{"role": "user", "content": question}]
-    print("Answer:")
-    res = model.chat(image=image, msgs=msgs, context=None, tokenizer=tokenizer, sampling=False, stream=True, max_new_tokens=50)
+    res, tok_encode_time, input_token_size = model.chat(image=image, msgs=msgs, context=None, tokenizer=tokenizer, sampling=False, stream=True, max_new_tokens=50)
+    print("=========tok_encode_time=========", tok_encode_time)
+    print("=========input_token_size=========", input_token_size)
+    # if len(tm_infer_list) > 0:
+    #     avg_token = sum(tm_infer_list[2:]) / (len(tm_infer_list) - 2)
+    #     print(f"warm up Inputs len {inputs['input_ids'].shape[1]} Vision latency: {tm_infer_list[0]:.2f} ms, First token infer latency: {tm_infer_list[1]:.2f} ms, Output len {len(tm_infer_list) - 1}, Avage token infer latency: {avg_token:.2f} ms")
 
+    print("Answer:")
     generated_text = ""
     for new_text in res:
         generated_text += new_text
         print(new_text, flush=True, end="")
+    
+    tm_list = []
+    tm_list.extend(model.get_llm_times())
+    print("\n=======tm_list======", tm_list)
+
     # tok_encode_start = time.perf_counter()
     # input_data = tokenizer(input_text_list, return_tensors='pt')
     # tok_encode_end = time.perf_counter()
@@ -873,12 +883,10 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     #     bench_hook.clear_time_infer_list()
 
 def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters):
-    model, tokenizer = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
-    print("============ model init ok ==========")
+    model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
+    print("============ from_pretrained_time ==========", pretrain_time)
     model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)
     iter_data_list = []
-    import requests
-    from PIL import Image
 
     # url = "https://github.com/openvinotoolkit/openvino_notebooks/assets/29454499/d5fbbd1a-d484-415c-88cb-9986625b7b11"
     # image = Image.open("prompts/cat.jpg")
