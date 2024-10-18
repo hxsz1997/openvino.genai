@@ -279,6 +279,25 @@ def create_ldm_super_resolution_model(model_path, device, **kwargs):
     return ov_model, from_pretrained_time
 
 
+def create_minicpmv2_model(model_path, device, **kwargs):
+    from llm_bench_utils.ov_model_classes import init_model
+    core = ov.Core()
+    model_path = Path(model_path)
+    image_emb_path = Path("image_encoder.xml")
+    resampler_path = Path("resampler.xml")
+    llm_path = Path("language_model_int4")
+
+    model_path_existed = Path(model_path).exists()
+    # load model
+    if not model_path_existed:
+        raise RuntimeError(f'==Failure ==: model path:{model_path} does not exist')
+    else:
+        if kwargs.get("genai", False):
+            raise ValueError(f"OpenVINO GenAI based benchmarking is not available for {model_type}")
+        ov_model, tokenizer = init_model(core, model_path, llm_path, image_emb_path, resampler_path, device)
+    return ov_model, tokenizer
+
+
 def is_genai_available(log_msg=False):
     import importlib
     try:
