@@ -1084,7 +1084,6 @@ CASE_TO_BENCH = {
     'image_cls': run_image_classification,
     'code_gen': run_text_generation_benchmark,
     'ldm_super_resolution': run_ldm_super_resolution_benchmark,
-    'minicpm-v-2_6': run_minicpmv2_benchmark
 }
 
 
