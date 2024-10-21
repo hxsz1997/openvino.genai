@@ -730,9 +730,10 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     image = Image.open(image)
     question = input_text['text']
     msgs = [{"role": "user", "content": question}]
-    res, tok_encode_time, input_token_size = model.chat(image=image, msgs=msgs, context=None, tokenizer=tokenizer, sampling=False, stream=True, max_new_tokens=50)
+    res, tok_encode_time, input_token_size, tok_decode_time = model.chat(image=image, msgs=msgs, context=None, tokenizer=tokenizer, sampling=False, stream=False, max_new_tokens=50)
     print("=========tok_encode_time=========", tok_encode_time)
     print("=========input_token_size=========", input_token_size)
+    print("=========tok_decode_time=========", tok_decode_time)
     # if len(tm_infer_list) > 0:
     #     avg_token = sum(tm_infer_list[2:]) / (len(tm_infer_list) - 2)
     #     print(f"warm up Inputs len {inputs['input_ids'].shape[1]} Vision latency: {tm_infer_list[0]:.2f} ms, First token infer latency: {tm_infer_list[1]:.2f} ms, Output len {len(tm_infer_list) - 1}, Avage token infer latency: {avg_token:.2f} ms")
@@ -744,8 +745,21 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
         print(new_text, flush=True, end="")
     
     tm_list = []
-    tm_list.extend(model.get_llm_times())
-    print("\n=======tm_list======", tm_list)
+    tm_infer_list = []
+    vision_list = []
+    sampler_list = []
+    tm_infer_list.extend(model.get_llm_times()[0])
+    tm_list.extend(model.get_llm_times()[1])
+    vision_list.extend(model.get_llm_times()[2])
+    sampler_list.extend(model.get_llm_times()[3])
+    print("========vision_list======", vision_list)
+    print("=======len(vision_list)=======", len(vision_list))
+    print("========sampler_list======", sampler_list)
+    print("=======len(sampler_list)=======", len(sampler_list))
+    # print("==========len(tm_list)=========", len(tm_list))
+    # print("==========len(tm_infer_list)=========", len(tm_infer_list))
+    # print("=======tm_list======\n", tm_list[0], sum(tm_list[1:])/(len(tm_list)-1))
+    # print("=======tm_infer_list======", tm_infer_list[0], sum(tm_infer_list[1:])/(len(tm_infer_list)-1))
 
     # tok_encode_start = time.perf_counter()
     # input_data = tokenizer(input_text_list, return_tensors='pt')

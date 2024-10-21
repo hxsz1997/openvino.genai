@@ -629,6 +629,7 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
         self.input_names = [input_t.get_any_name() for input_t in self.model.inputs]
         self.main_input_name = "input_ids"
         self.llm_times = []
+        self.tm_list = []
         if compile:
             self.compile()
 
@@ -680,6 +681,7 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
         # past_key_values are not used explicitly, instead they are handled inside the model
         if past_key_values is None:
             self.llm_times = []
+            self.tm_list = []
             # This is the first iteration in a sequence, reset all states
             if self.request is not None:
                 self.request.reset_state()
@@ -733,6 +735,7 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
     ):
         self.compile()
 
+        tic = time.perf_counter()
         inputs = self.prepare_inputs(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -747,12 +750,12 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
         self.request.start_async(inputs, share_inputs=True)
         self.request.wait()
         self.llm_times.append(time.perf_counter() - start)
-        if len(self.llm_times) == 50:
-            print("======self.llm_times=====", self.llm_times)
         logits = self.request.get_tensor("logits").data
         logits = torch.from_numpy(logits).to(self.device)
         past_key_values = ((),)
         self._past_length += inputs["inputs_embeds"].shape[1]
+
+        self.tm_list.append(time.perf_counter() - tic)
 
         return CausalLMOutputWithPast(logits=logits, past_key_values=past_key_values)
 
@@ -818,7 +821,7 @@ class OvModelForCausalLMWithEmb(GenerationMixin):
         return self.forward(*args, **kwargs)
 
     def get_llm_times(self):
-        return self.llm_times
+        return self.llm_times, self.tm_list
 
 
 class OvMiniCPMV:
@@ -983,8 +986,13 @@ class OvMiniCPMV:
         output = self.llm.generate(
             inputs_embeds=torch.from_numpy(inputs_embeds), pad_token_id=0, eos_token_id=terminators, attention_mask=attention_mask, **kwargs
         )
+        print("=======output=====", output.shape)
         if decode_text:
-            return self._decode_text(output, tokenizer)
+            tok_decode_start = time.perf_counter()
+            result_text = self._decode_text(output, tokenizer)
+            tok_decode_end = time.perf_counter()
+            tok_decode_time = (tok_decode_end - tok_decode_start) * 1000
+            return result_text, tok_decode_time
         return output
 
     def _decode_stream(self, inputs_embeds, tokenizer, **kwargs):
@@ -1044,9 +1052,9 @@ class OvMiniCPMV:
             if stream:
                 result = self._decode_stream(model_inputs["inputs_embeds"], tokenizer, **kwargs)
             else:
-                result = self._decode(model_inputs["inputs_embeds"], tokenizer, attention_mask, decode_text=decode_text, **kwargs)
+                result, tok_decode_time = self._decode(model_inputs["inputs_embeds"], tokenizer, attention_mask, decode_text=decode_text, **kwargs)
 
-        return result
+        return result, tok_decode_time
 
     def chat(
         self,
@@ -1162,7 +1170,7 @@ class OvMiniCPMV:
 
         inputs.pop("image_sizes")
         with torch.inference_mode():
-            res = self.generate(
+            res, tok_decode_time = self.generate(
                 **inputs,
                 tokenizer=tokenizer,
                 max_new_tokens=max_new_tokens,
@@ -1187,10 +1195,11 @@ class OvMiniCPMV:
                 answer = res
             else:
                 answer = res[0]
-            return answer, tok_encode_time, input_token_size
+            return answer, tok_encode_time, input_token_size, tok_decode_time
     
     def get_llm_times(self):
-        return self.llm.get_llm_times()
+        tm_infer_list, tm_list = self.llm.get_llm_times()
+        return tm_infer_list, tm_list, self.vpm_times, self.resampler_times
 
 
 def init_model(core, model_dir, llm_model_dir, image_emb_path, resampler_path, device):
