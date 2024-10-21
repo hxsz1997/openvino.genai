@@ -1,0 +1,24 @@
+iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5
+0,llama-2-7b-chat,ov,gpu,4.38039,8,512,12.85623,512,25.10982,117.38777,24.90832,unknown,,,,0,116.29658,24.48356,1,1,0.77217,0.61617,['4814d7f5dd0b45a3c5269b796ac92ba0']
+1,llama-2-7b-chat,ov,gpu,,8,512,12.73524,512,24.87352,37.3369,24.82921,unknown,,,,0,36.9257,24.41824,1,1,0.27381,0.51429,['4814d7f5dd0b45a3c5269b796ac92ba0']
+avg,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.73524,512.0,24.87352,37.3369,24.82921,unknown,,,,0,36.9257,24.41824,1,1,0.27381,0.51429,['4814d7f5dd0b45a3c5269b796ac92ba0']
+mini,llama-2-7b-chat,ov,gpu,,8,512,12.73524,512,24.87352,37.3369,24.82921,unknown,,,,0,36.9257,24.41824,1,1,0.27381,0.51429,['4814d7f5dd0b45a3c5269b796ac92ba0']
+median,llama-2-7b-chat,ov,gpu,,8.0,512.0,12.73524,512.0,24.87352,37.3369,24.82921,unknown,,,,0,36.9257,24.41824,1,1,0.27381,0.51429,['4814d7f5dd0b45a3c5269b796ac92ba0']
+,,,,,,,,,,,,,,,,,,,,,,,
+input_size: Input token size,,,,,,,,,,,,,,,,,,,,,,,
+output_size: Text/Code generation models: generated text token size,,,,,,,,,,,,,,,,,,,,,,,
+infer_count: Limit the Text/Code generation models' output token size,,,,,,,,,,,,,,,,,,,,,,,
+latency: Text/Code generation models: ms/token. Output token size / generation time,,,,,,,,,,,,,,,,,,,,,,,
+1st_latency: Text/Code generation models: Fisrt token latency,,,,,,,,,,,,,,,,,,,,,,,
+2nd_avg_latency: Text/Code generation models: Other tokens (exclude first token) latency,,,,,,,,,,,,,,,,,,,,,,,
+1st_infer_latency: Text/Code generation models: Fisrt inference latency,,,,,,,,,,,,,,,,,,,,,,,
+2nd_infer_avg_latency: Text/Code generation models: Other inferences (exclude first inference) latency,,,,,,,,,,,,,,,,,,,,,,,
+result_md5: MD5 of generated text,,,,,,,,,,,,,,,,,,,,,,,
+prompt_idx: Index of prompts,,,,,,,,,,,,,,,,,,,,,,,
+tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,
+detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,
+pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,
+generation_time: Time for one interaction. (e.g. The duration of  answering one question or generating one picture),,,,,,,,,,,,,,,,,,,,,,,
+iteration=0: warm-up; iteration=avg: average (exclude warm-up);iteration=mini: minimum value (exclude warm-up);iteration=median: median value (exclude warm-up);,,,,,,,,,,,,,,,,,,,,,,,
+max_rss_mem: max rss memory consumption;,,,,,,,,,,,,,,,,,,,,,,,
+max_shared_mem: max shared memory consumption;,,,,,,,,,,,,,,,,,,,,,,,

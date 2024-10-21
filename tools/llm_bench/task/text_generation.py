@@ -15,6 +15,7 @@ from transformers import set_seed
 import llm_bench_utils.output_json
 import llm_bench_utils.output_file
 import llm_bench_utils.gen_output_data as gen_output_data
+from task.multimodal_generation import run_minicpmv2
 
 FW_UTILS = {'pt': llm_bench_utils.pt_utils, 'ov': llm_bench_utils.ov_utils}
 
@@ -394,11 +395,17 @@ def run_text_generation_genai_with_stream(input_text, num, model, tokenizer, arg
 
 
 def run_text_generation_benchmark(model_path, framework, device, args, num_iters, mem_consumption):
-    model, tokenizer, pretrain_time, bench_hook, use_genai = FW_UTILS[framework].create_text_gen_model(model_path, device, **args)
+    if args['model_name'] == 'MiniCPM-V-2_6':
+        model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
+    else:
+        model, tokenizer, pretrain_time, bench_hook, use_genai = FW_UTILS[framework].create_text_gen_model(model_path, device, **args)
     model_precision = model_utils.get_model_precision(model_path.parts)
     iter_data_list = []
     md5_list = {num : {} for num in range(num_iters + 1)}
-    input_text_list = model_utils.get_prompts(args)
+    if args['model_name'] == 'MiniCPM-V-2_6':
+        input_text_list = llm_bench_utils.model_utils.get_multimodal_param_from_prompt_file(args)
+    else:
+        input_text_list = model_utils.get_prompts(args)
     if args['prompt_index'] is None:
         prompt_idx_list = [prompt_idx for prompt_idx, input_text in enumerate(input_text_list)]
         text_list = input_text_list
@@ -415,6 +422,9 @@ def run_text_generation_benchmark(model_path, framework, device, args, num_iters
              f'prompt nums: {len(text_list)}, prompt idx: {prompt_idx_list}')
 
     # if num_iters == 0, just output warm-up data
+    if args['model_name'] == 'MiniCPM-V-2_6':
+        use_genai = False
+        bench_hook = None
     if not use_genai:
         text_gen_fn = run_text_generation
     elif bench_hook is not None:
@@ -427,7 +437,10 @@ def run_text_generation_benchmark(model_path, framework, device, args, num_iters
             for idx, input_text in enumerate(text_list):
                 if num == 0:
                     log.info(f'[warm-up][P{prompt_idx_list[idx]}] Input text: {input_text}')
-                text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list,
+                if args['model_name'] == 'MiniCPM-V-2_6':
+                    run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], bench_hook, model_precision, proc_id)
+                else:
+                    text_gen_fn(input_text, num, model, tokenizer, args, iter_data_list, md5_list,
                             prompt_idx_list[idx], bench_hook, model_precision, proc_id, mem_consumption)
     else:
         for idx, input_text in enumerate(text_list):
