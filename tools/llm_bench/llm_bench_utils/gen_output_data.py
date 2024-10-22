@@ -17,7 +17,9 @@ def gen_iterate_data(
     max_uss_mem='',
     prompt_idx='',
     tokenization_time=[],
-    loop_data=None
+    loop_data=None,
+    vision_latency='',
+    sampler_latency=''
 ):
     iter_data = {}
     iter_data['iteration'] = iter_idx
@@ -34,6 +36,8 @@ def gen_iterate_data(
     iter_data['prompt_idx'] = prompt_idx
     iter_data['tokenization_time'] = tokenization_time[0] if len(tokenization_time) > 0 else ''
     iter_data['detokenization_time'] = tokenization_time[1] if len(tokenization_time) > 1 else ''
+    iter_data['vision_latency'] = vision_latency
+    iter_data['sampler_latency'] = sampler_latency
 
     if loop_data is not None:
         iter_data['enc_token_latency'] = loop_data['enc_token_time']

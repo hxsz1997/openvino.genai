@@ -986,13 +986,14 @@ class OvMiniCPMV:
         output = self.llm.generate(
             inputs_embeds=torch.from_numpy(inputs_embeds), pad_token_id=0, eos_token_id=terminators, attention_mask=attention_mask, **kwargs
         )
-        print("=======output=====", output.shape)
+        print("=======output=====", output.shape[1])
+        generated_token_size = output.shape[1]
         if decode_text:
             tok_decode_start = time.perf_counter()
             result_text = self._decode_text(output, tokenizer)
             tok_decode_end = time.perf_counter()
             tok_decode_time = (tok_decode_end - tok_decode_start) * 1000
-            return result_text, tok_decode_time
+            return result_text, tok_decode_time, generated_token_size
         return output
 
     def _decode_stream(self, inputs_embeds, tokenizer, **kwargs):
@@ -1052,9 +1053,9 @@ class OvMiniCPMV:
             if stream:
                 result = self._decode_stream(model_inputs["inputs_embeds"], tokenizer, **kwargs)
             else:
-                result, tok_decode_time = self._decode(model_inputs["inputs_embeds"], tokenizer, attention_mask, decode_text=decode_text, **kwargs)
+                result, tok_decode_time, generated_token_size = self._decode(model_inputs["inputs_embeds"], tokenizer, attention_mask, decode_text=decode_text, **kwargs)
 
-        return result, tok_decode_time
+        return result, tok_decode_time, generated_token_size
 
     def chat(
         self,
@@ -1146,11 +1147,12 @@ class OvMiniCPMV:
 
             prompts_lists.append(processor.tokenizer.apply_chat_template(copy_msgs, tokenize=False, add_generation_prompt=True))
             input_images_lists.append(images)
-
+        print("prompts_lists: ", prompts_lists)
         tok_encode_start = time.perf_counter()
         inputs = processor(
             prompts_lists, input_images_lists, max_slice_nums=max_slice_nums, use_image_id=use_image_id, return_tensors="pt", max_length=max_inp_length
         )
+        print("inputs: ", inputs['input_ids'].shape)
         tok_encode_end = time.perf_counter()
         tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
         input_token_size = inputs['input_ids'][0].numel()
@@ -1169,8 +1171,9 @@ class OvMiniCPMV:
         generation_config.update((k, kwargs[k]) for k in generation_config.keys() & kwargs.keys())
 
         inputs.pop("image_sizes")
+        gen_start = time.perf_counter()
         with torch.inference_mode():
-            res, tok_decode_time = self.generate(
+            res, tok_decode_time, generated_token_size = self.generate(
                 **inputs,
                 tokenizer=tokenizer,
                 max_new_tokens=max_new_tokens,
@@ -1179,7 +1182,7 @@ class OvMiniCPMV:
                 decode_text=True,
                 **generation_config,
             )
-
+        generation_time = (time.perf_counter()-gen_start)* 1000 - tok_decode_time
         if stream:
 
             def stream_gen():
@@ -1188,14 +1191,15 @@ class OvMiniCPMV:
                         text = text.replace(term, "")
                     yield text
 
-            return stream_gen(), tok_encode_time, input_token_size
+            return stream_gen(), tok_encode_time, input_token_size, generation_time, generated_token_size
 
         else:
             if batched:
                 answer = res
             else:
+                print("=======batch is False=======")
                 answer = res[0]
-            return answer, tok_encode_time, input_token_size, tok_decode_time
+            return answer, tok_encode_time, input_token_size, tok_decode_time, generation_time, generated_token_size
     
     def get_llm_times(self):
         tm_infer_list, tm_list = self.llm.get_llm_times()

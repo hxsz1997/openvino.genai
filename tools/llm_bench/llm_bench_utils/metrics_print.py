@@ -30,6 +30,10 @@ def print_metrics(
         output_str += 'Generation Time: {:.2f}s, '.format(iter_data['generation_time'])
     if iter_data['latency'] != '':
         output_str += 'Latency: {:.2f} ms/{}'.format(iter_data['latency'], latency_unit)
+    if iter_data['vision_latency'] != '':
+        output_str += 'vision_latency: {:.2f} ms, '.format(iter_data['vision_latency'])
+    if iter_data['sampler_latency'] != '':
+        output_str += 'sampler_latency: {:.2f} ms, '.format(iter_data['sampler_latency'])
     if output_str != '':
         output_str = ' '.join([prefix, output_str])
         log.info(output_str)
