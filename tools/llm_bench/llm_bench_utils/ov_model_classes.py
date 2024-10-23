@@ -986,7 +986,6 @@ class OvMiniCPMV:
         output = self.llm.generate(
             inputs_embeds=torch.from_numpy(inputs_embeds), pad_token_id=0, eos_token_id=terminators, attention_mask=attention_mask, **kwargs
         )
-        print("=======output=====", output.shape[1])
         generated_token_size = output.shape[1]
         if decode_text:
             tok_decode_start = time.perf_counter()
@@ -1147,16 +1146,13 @@ class OvMiniCPMV:
 
             prompts_lists.append(processor.tokenizer.apply_chat_template(copy_msgs, tokenize=False, add_generation_prompt=True))
             input_images_lists.append(images)
-        print("prompts_lists: ", prompts_lists)
         tok_encode_start = time.perf_counter()
         inputs = processor(
             prompts_lists, input_images_lists, max_slice_nums=max_slice_nums, use_image_id=use_image_id, return_tensors="pt", max_length=max_inp_length
         )
-        print("inputs: ", inputs['input_ids'].shape)
         tok_encode_end = time.perf_counter()
         tok_encode_time = (tok_encode_end - tok_encode_start) * 1000
         input_token_size = inputs['input_ids'][0].numel()
-        # print("=========input_token_size=========", inputs['input_ids'][0].numel())
 
         if sampling:
             generation_config = {"top_p": 0.8, "top_k": 100, "temperature": 0.7, "do_sample": True, "repetition_penalty": 1.05}
@@ -1197,7 +1193,6 @@ class OvMiniCPMV:
             if batched:
                 answer = res
             else:
-                print("=======batch is False=======")
                 answer = res[0]
             return answer, tok_encode_time, input_token_size, tok_decode_time, generation_time, generated_token_size
     

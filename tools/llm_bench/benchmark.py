@@ -156,10 +156,6 @@ def main():
     log.basicConfig(format='[ %(levelname)s ] %(message)s', level=os.environ.get("LOGLEVEL", log.INFO), stream=sys.stdout, **logging_kwargs)
     args = get_argprser()
     model_path, framework, model_args, model_name = llm_bench_utils.model_utils.analyze_args(args)
-    print("model_path: ", model_path)
-    print("framework: ", framework)
-    print("model_args: ", model_args)
-    print("model_name: ", model_name)
 
     # Set the device for running OpenVINO backend for torch.compile()
     if model_args['torch_compile_backend']:

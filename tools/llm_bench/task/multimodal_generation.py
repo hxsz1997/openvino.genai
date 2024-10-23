@@ -135,6 +135,8 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
 
 
 def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_consumption):
+    if framework =='pt':
+        raise RuntimeError('== Minicpmv2 is not support pt framework ==')
     model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
     print("============ from_pretrained_time ==========", pretrain_time)
     model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)

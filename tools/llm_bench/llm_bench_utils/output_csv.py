@@ -98,6 +98,8 @@ def gen_data_to_csv(result, iter_data, pretrain_time):
     shared_mem = iter_data['max_shared_mem_consumption']
     token_time = iter_data['tokenization_time']
     detoken_time = iter_data['detokenization_time']
+    vision_latency = iter_data['vision_latency']
+    sampler_latency = iter_data['sampler_latency']
     result['iteration'] = str(iter_data['iteration'])
     result['pretrain_time(s)'] = pretrain_time
     result['input_size'] = iter_data['input_size']
@@ -106,8 +108,8 @@ def gen_data_to_csv(result, iter_data, pretrain_time):
     result['output_size'] = iter_data['output_size']
     result['latency(ms)'] = round(latency, 5) if latency != '' else latency
     result['result_md5'] = iter_data['result_md5']
-    result['vision_latency'] = iter_data['vision_latency']
-    result['sampler_latency'] = iter_data['sampler_latency']
+    result['vision_latency(ms)'] = round(vision_latency, 5) if vision_latency != '' else vision_latency
+    result['sampler_latency(ms)'] = round(sampler_latency, 5) if sampler_latency != '' else sampler_latency
     if first_latency < 0:
         result['1st_latency(ms)'] = 'NA'
     else:
@@ -158,8 +160,8 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
         'tokenization_time',
         'detokenization_time',
         'result_md5',
-        'vision_latency',
-        'sampler_latency',
+        'vision_latency(ms)',
+        'sampler_latency(ms)',
     ]
     out_file = Path(report_file)
 
