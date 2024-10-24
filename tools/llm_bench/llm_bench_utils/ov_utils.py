@@ -300,6 +300,42 @@ def create_minicpmv2_model(model_path, device, **kwargs):
         from_pretrained_time = end - start
     return ov_model, tokenizer, from_pretrained_time
 
+def create_genai_minicpmv2_model(model_path, device, **kwargs):
+    import openvino_genai
+    # from transformers import AutoTokenizer
+
+    if not (model_path / "openvino_tokenizer.xml").exists() or not (model_path / "openvino_detokenizer.xml").exists():
+        convert_ov_tokenizer(model_path)
+
+    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    config = openvino_genai.GenerationConfig()
+
+    cb = kwargs.get("use_cb", False)
+    if cb:
+        log.info("Continuous Batching mode activated")
+        default_cb_config = {"cache_size": 1}
+        if "GPU" in device:
+            default_cb_config["block_size"] = 16
+        scheduler_config = openvino_genai.SchedulerConfig()
+        scheduler_params = kwargs.get("cb_config") or default_cb_config
+        if scheduler_params:
+            log.info(f"Scheduler parameters:\n{scheduler_params}")
+
+            for param, value in scheduler_params.items():
+                setattr(scheduler_config, param, value)
+        ov_config["scheduler_config"] = scheduler_config
+    enable_compile_cache = dict()
+    if "GPU" == device:
+        # Cache compiled models on disk for GPU to save time on the
+        # next run. It's not beneficial for CPU.
+        enable_compile_cache["CACHE_DIR"] = "vlm_cache"
+    start = time.perf_counter()
+    llm_pipe = openvino_genai.VLMPipeline(model_path, device.upper(), **enable_compile_cache)
+    end = time.perf_counter()
+    log.info(f'Pipeline initialization time: {end - start:.2f}s')
+
+    return llm_pipe, end - start, config
+
 
 def is_genai_available(log_msg=False):
     import importlib
