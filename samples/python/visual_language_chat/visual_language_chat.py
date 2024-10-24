@@ -67,16 +67,28 @@ def main():
     config.max_new_tokens = 100
 
     pipe.start_chat()
-    prompt = input('question:\n')
-    pipe.generate(prompt, images=rgbs, generation_config=config, streamer=streamer)
-
-    while True:
-        try:
-            prompt = input("\n----------\n"
-                "question:\n")
-        except EOFError:
-            break
-        pipe.generate(prompt, generation_config=config, streamer=streamer)
+    prompt = 'What is in the picture?'
+    generation_result = pipe.generate(prompt, images=rgbs, generation_config=config, streamer=streamer)
+    print("generation_result: ", generation_result.texts)
+    perf_metrics = generation_result.perf_metrics
+    raw_metrics = perf_metrics.raw_metrics
+    print("detokenization_durations:", raw_metrics.detokenization_durations)
+    print("generate_durations:", raw_metrics.generate_durations)
+    print("m_batch_sizes:", raw_metrics.m_batch_sizes)
+    print("m_durations:", raw_metrics.m_durations)
+    print("m_times_to_first_token:", raw_metrics.m_times_to_first_token)
+    print("tokenization_durations:", raw_metrics.tokenization_durations)
+    print(f"Load time: {perf_metrics.get_load_time():.2f} ms")
+    print(f"Generate time: {perf_metrics.get_generate_duration().mean:.2f} ± {perf_metrics.get_generate_duration().std:.2f} ms")
+    print(f"Tokenization time: {perf_metrics.get_tokenization_duration().mean:.2f} ± {perf_metrics.get_tokenization_duration().std:.2f} ms")
+    print(f"Detokenization time: {perf_metrics.get_detokenization_duration().mean:.2f} ± {perf_metrics.get_detokenization_duration().std:.2f} ms")
+    # while True:
+    #     try:
+    #         prompt = input("\n----------\n"
+    #             "question:\n")
+    #     except EOFError:
+    #         break
+    #     pipe.generate(prompt, generation_config=config, streamer=streamer)
     pipe.finish_chat()
 
 
