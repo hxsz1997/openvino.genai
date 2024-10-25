@@ -9,6 +9,7 @@ import openvino_genai
 from PIL import Image
 from openvino import Tensor
 from pathlib import Path
+import time
 
 
 def streamer(subword: str) -> bool:
@@ -61,27 +62,22 @@ def main():
         # Cache compiled models on disk for GPU to save time on the
         # next run. It's not beneficial for CPU.
         enable_compile_cache["CACHE_DIR"] = "vlm_cache"
+    start = time.perf_counter()
     pipe = openvino_genai.VLMPipeline(args.model_dir, device, **enable_compile_cache)
+    end = time.perf_counter()
+    pretrained_time = end - start
 
     config = openvino_genai.GenerationConfig()
     config.max_new_tokens = 100
 
     pipe.start_chat()
     prompt = 'What is in the picture?'
+    start = time.perf_counter()
     generation_result = pipe.generate(prompt, images=rgbs, generation_config=config, streamer=streamer)
-    print("generation_result: ", generation_result.texts)
+    end = time.perf_counter()
+    generation_time = end - start
     perf_metrics = generation_result.perf_metrics
     raw_metrics = perf_metrics.raw_metrics
-    print("detokenization_durations:", raw_metrics.detokenization_durations)
-    print("generate_durations:", raw_metrics.generate_durations)
-    print("m_batch_sizes:", raw_metrics.m_batch_sizes)
-    print("m_durations:", raw_metrics.m_durations)
-    print("m_times_to_first_token:", raw_metrics.m_times_to_first_token)
-    print("tokenization_durations:", raw_metrics.tokenization_durations)
-    print(f"Load time: {perf_metrics.get_load_time():.2f} ms")
-    print(f"Generate time: {perf_metrics.get_generate_duration().mean:.2f} ± {perf_metrics.get_generate_duration().std:.2f} ms")
-    print(f"Tokenization time: {perf_metrics.get_tokenization_duration().mean:.2f} ± {perf_metrics.get_tokenization_duration().std:.2f} ms")
-    print(f"Detokenization time: {perf_metrics.get_detokenization_duration().mean:.2f} ± {perf_metrics.get_detokenization_duration().std:.2f} ms")
     # while True:
     #     try:
     #         prompt = input("\n----------\n"

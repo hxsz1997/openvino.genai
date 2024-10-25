@@ -302,12 +302,12 @@ def create_minicpmv2_model(model_path, device, **kwargs):
 
 def create_genai_minicpmv2_model(model_path, device, **kwargs):
     import openvino_genai
-    # from transformers import AutoTokenizer
+    from transformers import AutoTokenizer
 
     if not (model_path / "openvino_tokenizer.xml").exists() or not (model_path / "openvino_detokenizer.xml").exists():
         convert_ov_tokenizer(model_path)
 
-    # tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     config = openvino_genai.GenerationConfig()
 
     cb = kwargs.get("use_cb", False)
@@ -334,7 +334,7 @@ def create_genai_minicpmv2_model(model_path, device, **kwargs):
     end = time.perf_counter()
     log.info(f'Pipeline initialization time: {end - start:.2f}s')
 
-    return llm_pipe, end - start, config
+    return llm_pipe, end - start, config, tokenizer
 
 
 def is_genai_available(log_msg=False):
