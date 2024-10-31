@@ -15,7 +15,6 @@ from transformers import set_seed
 import llm_bench_utils.output_json
 import llm_bench_utils.output_file
 import llm_bench_utils.gen_output_data as gen_output_data
-from task.multimodal_generation import run_minicpmv2
 
 FW_UTILS = {'pt': llm_bench_utils.pt_utils, 'ov': llm_bench_utils.ov_utils}
 
