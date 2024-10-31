@@ -71,20 +71,16 @@ def main():
     config.max_new_tokens = 100
 
     pipe.start_chat()
-    prompt = 'What is in the picture?'
-    start = time.perf_counter()
-    generation_result = pipe.generate(prompt, images=rgbs, generation_config=config, streamer=streamer)
-    end = time.perf_counter()
-    generation_time = end - start
-    perf_metrics = generation_result.perf_metrics
-    raw_metrics = perf_metrics.raw_metrics
-    # while True:
-    #     try:
-    #         prompt = input("\n----------\n"
-    #             "question:\n")
-    #     except EOFError:
-    #         break
-    #     pipe.generate(prompt, generation_config=config, streamer=streamer)
+    prompt = input('question:\n')
+    pipe.generate(prompt, images=rgbs, generation_config=config, streamer=streamer)
+
+    while True:
+        try:
+            prompt = input("\n----------\n"
+                "question:\n")
+        except EOFError:
+            break
+        pipe.generate(prompt, generation_config=config, streamer=streamer)
     pipe.finish_chat()
 
 
