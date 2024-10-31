@@ -18,7 +18,6 @@ import task.super_resolution_generation as bench_ldm_sr
 import task.multimodal_generation as bench_minicpmv2
 
 
-
 mem_consumption = MemConsumption()
 
 
