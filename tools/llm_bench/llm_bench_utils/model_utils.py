@@ -206,7 +206,7 @@ def analyze_args(args):
     model_args['model_name'] = model_name
 
     if args.use_cb and not args.genai:
-        raise RuntimeError("Continious batching mode supported only via OpenVINO GenAI")
+        raise RuntimeError("Continuous batching mode supported only via OpenVINO GenAI")
     cb_config = None
     if args.cb_config:
         cb_config = get_config(args.cb_config)
@@ -248,12 +248,12 @@ def get_config(config):
             try:
                 ov_config = json.load(f)
             except Exception:
-                raise RuntimeError(f'==Parse file:{config} failiure, json format is incorrect ==')
+                raise RuntimeError(f'==Parse file:{config} failure, json format is incorrect ==')
     else:
         try:
             ov_config = json.loads(config)
         except Exception:
-            raise RuntimeError(f'==Parse config:{config} failiure, json format is incorrect ==')
+            raise RuntimeError(f'==Parse config:{config} failure, json format is incorrect ==')
     return ov_config
 
 
@@ -306,3 +306,13 @@ def get_model_precision(model_name_list):
         if model_precision != 'unknown':
             break
     return model_precision
+
+
+def init_timestamp(num_iters, prompt_list, prompt_idx_list):
+    iter_timestamp = {}
+    for num in range(num_iters + 1):
+        iter_timestamp[num] = {}
+        for idx, input_text in enumerate(prompt_list):
+            p_idx = prompt_idx_list[idx]
+            iter_timestamp[num][p_idx] = {}
+    return iter_timestamp

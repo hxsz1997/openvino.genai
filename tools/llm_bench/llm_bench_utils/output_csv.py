@@ -5,6 +5,7 @@ import csv
 import numpy as np
 import copy
 from pathlib import Path
+import llm_bench_utils.output_json as output_json
 
 
 def output_comments(result, use_case, writer):
@@ -18,9 +19,9 @@ def output_comments(result, use_case, writer):
         comment_list.append('output_size: Text/Code generation models: generated text token size')
         comment_list.append("infer_count: Limit the Text/Code generation models' output token size")
         comment_list.append('latency: Text/Code generation models: ms/token. Output token size / generation time')
-        comment_list.append('1st_latency: Text/Code generation models: Fisrt token latency')
+        comment_list.append('1st_latency: Text/Code generation models: First token latency')
         comment_list.append('2nd_avg_latency: Text/Code generation models: Other tokens (exclude first token) latency')
-        comment_list.append('1st_infer_latency: Text/Code generation models: Fisrt inference latency')
+        comment_list.append('1st_infer_latency: Text/Code generation models: First inference latency')
         comment_list.append('2nd_infer_avg_latency: Text/Code generation models: Other inferences (exclude first inference) latency')
         comment_list.append('result_md5: MD5 of generated text')
         comment_list.append('prompt_idx: Index of prompts')
@@ -99,7 +100,7 @@ def output_avg_min_median(iter_data_list):
     return result
 
 
-def gen_data_to_csv(result, iter_data, pretrain_time):
+def gen_data_to_csv(result, iter_data, pretrain_time, iter_timestamp):
     generation_time = iter_data['generation_time']
     latency = iter_data['latency']
     first_latency = iter_data['first_token_latency']
@@ -145,9 +146,10 @@ def gen_data_to_csv(result, iter_data, pretrain_time):
     result['prompt_idx'] = iter_data['prompt_idx']
     result['tokenization_time'] = round(token_time, 5) if token_time != '' else token_time
     result['detokenization_time'] = round(detoken_time, 5) if detoken_time != '' else detoken_time
+    result['start'], result['end'] = output_json.get_timestamp(iter_data['iteration'], iter_data['prompt_idx'], iter_timestamp)
 
 
-def write_result(report_file, model, framework, device, model_args, iter_data_list, pretrain_time, model_precision):
+def write_result(report_file, model, framework, device, model_args, iter_data_list, pretrain_time, model_precision, iter_timestamp):
     header = [
         'iteration',
         'model',
@@ -173,8 +175,8 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
         'tokenization_time',
         'detokenization_time',
         'result_md5',
-        'vision_latency(ms)',
-        'sampler_latency(ms)',
+        'start',
+        'end'
     ]
     out_file = Path(report_file)
 
@@ -193,13 +195,13 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
             for i in range(len(iter_data_list)):
                 iter_data = iter_data_list[i]
                 pre_time = '' if i > 0 else result['pretrain_time(s)']
-                gen_data_to_csv(result, iter_data, pre_time)
+                gen_data_to_csv(result, iter_data, pre_time, iter_timestamp)
                 writer.writerow(result)
 
             res_data = output_avg_min_median(iter_data_list)
 
             for key in res_data.keys():
                 for data in res_data[key]:
-                    gen_data_to_csv(result, data, '')
+                    gen_data_to_csv(result, data, '', iter_timestamp)
                     writer.writerow(result)
             output_comments(result, model_args['use_case'], writer)
