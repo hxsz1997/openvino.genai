@@ -176,7 +176,9 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
         'detokenization_time',
         'result_md5',
         'start',
-        'end'
+        'end',
+        'vision_latency(ms)',
+        'sampler_latency(ms)'
     ]
     out_file = Path(report_file)
 

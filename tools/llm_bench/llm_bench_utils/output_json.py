@@ -47,7 +47,9 @@ def write_result(report_file, model, framework, device, model_args, iter_data_li
             'tokenization_time': round(tokenization_time, 5) if tokenization_time != '' else tokenization_time,
             'detokenization_time': round(detokenization_time, 5) if detokenization_time != '' else detokenization_time,
             'start': timestamp_start,
-            'end': timestamp_end
+            'end': timestamp_end,
+            'vision_latency': round(vision_latency, 5) if vision_latency != '' else vision_latency,
+            'sampler_latency': round(sampler_latency, 5) if sampler_latency != '' else sampler_latency
         }
 
         result.append(res_data)

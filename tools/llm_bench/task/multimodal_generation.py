@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import os
 import time
+import datetime
 import logging as log
 import llm_bench_utils.ov_utils
 import llm_bench_utils.pt_utils
@@ -24,8 +25,7 @@ FW_UTILS = {'pt': llm_bench_utils.pt_utils, 'ov': llm_bench_utils.ov_utils}
 DEFAULT_OUTPUT_TOKEN_SIZE = 512
 
 def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, 
-                  prompt_index, bench_hook, model_precision, proc_id, mem_consumption):
-    print("======run_minicpmv2======")
+                  prompt_index, model_precision, proc_id, mem_consumption):
     set_seed(args['seed'])
     input_text_list = [input_text] * args['batch_size']
     if args["output_dir"] is not None and num == 0:
@@ -68,14 +68,6 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     else:
         log.warning("No generated tokens")    
     
-    
-    print("=========tok_encode_time=========", tok_encode_time)
-    print("=========input_token_size=========", input_token_size)
-    print("=========tok_decode_time=========", tok_decode_time)
-    print("=========generation_time=========", generation_time)
-    print("=========generated_token_size=========", generated_token_size)
-    print("=========res=========", res)
-    
     tm_list = []
     tm_infer_list = []
     vision_list = []
@@ -84,8 +76,6 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     tm_list.extend(model.get_llm_times()[1])
     vision_list.extend(model.get_llm_times()[2])
     sampler_list.extend(model.get_llm_times()[3])
-
-    print("==========len(tm_list)=========", len(tm_list))
     
     iter_data = gen_output_data.gen_iterate_data(
         iter_idx=num,
@@ -165,17 +155,6 @@ def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list,
     image = input_text['image']
     rgbs = read_images(image)
     prompt = input_text['text']
-    # generation_result = model.generate(prompt, images=rgbs, generation_config=config)
-    # print("generation_result: ", generation_result.texts)
-    # pt_inputs = tokenizer(input_text_list, return_tensors="pt")
-    # input_token_size = pt_inputs.input_ids.shape[1]
-    # if args['batch_size'] > 1:
-    #     out_str = '[warm-up]' if num == 0 else '[{}]'.format(num)
-    #     out_str += " Batch_size={}, ".format(args['batch_size'])
-    #     out_str += 'all input token size after padding: {} * {}, '.format(input_token_size, args['batch_size'])
-    #     if args['infer_count'] is not None:
-    #         out_str += 'all max_output_token_size: {} * {}'.format(args['infer_count'], args['batch_size'])
-    #     log.info(out_str)
 
     max_rss_mem_consumption = ''
     max_uss_mem_consumption = ''
@@ -216,8 +195,6 @@ def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list,
         per_token_time = generation_time * 1000 / (num_tokens / args['batch_size'])
     else:
         log.warning("No generated tokens")
-    print("num_tokens: ", num_tokens)
-    print("generated_text: ", generated_text)
     tm_list = np.array(perf_metrics.raw_metrics.m_durations) / 1000 / 1000
     log.debug('latency of all tokens:')
     [log.debug('[{}]{:.4f}'.format(idx, tm)) for idx, tm in enumerate(tm_list)]
@@ -279,7 +256,6 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
         model, pretrain_time, config, tokenizer = FW_UTILS[framework].create_genai_minicpmv2_model(model_path, device, **args)
     else:
         model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
-    print("============ from_pretrained_time ==========", pretrain_time)
     model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)
     iter_data_list = []
     md5_list = {num : {} for num in range(num_iters + 1)}
@@ -300,25 +276,35 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
              f"prompt idx: {prompt_idx_list}, num_beams: {args['num_beams']}")
 
     proc_id = os.getpid()
-    bench_hook = None
+    iter_timestamp = model_utils.init_timestamp(num_iters, text_list, prompt_idx_list)
     if args['subsequent'] is False:
         for num in range(num_iters + 1):
             for idx, input_text in enumerate(text_list):
+                p_idx = prompt_idx_list[idx]
                 if num == 0:
-                    log.info(f'[warm-up] Input text: {input_text}')
+                    log.info(f'[warm-up][P{p_idx}] Input text: {input_text}')
+                iter_timestamp[num][p_idx]['start'] = datetime.datetime.now().isoformat()
                 if args['genai']:    
-                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption, config)
+                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, p_idx, model_precision, proc_id, mem_consumption, config)
                 else:
-                    run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], bench_hook, model_precision, proc_id, mem_consumption)
+                    run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, p_idx, model_precision, proc_id, mem_consumption)
+                iter_timestamp[num][p_idx]['end'] = datetime.datetime.now().isoformat()
+                prefix = '[warm-up]' if num == 0 else '[{}]'.format(num)
+                log.info(f"{prefix}[P{p_idx}] start: {iter_timestamp[num][p_idx]['start']}, end: {iter_timestamp[num][p_idx]['end']}")
     else:
         for idx, input_text in enumerate(text_list):
+            p_idx = prompt_idx_list[idx]
             for num in range(num_iters + 1):
                 if num == 0:
-                    log.info(f'[warm-up] Input text: {input_text}')
+                    log.info(f'[warm-up][P{p_idx}] Input text: {input_text}')
+                iter_timestamp[num][p_idx]['start'] = datetime.datetime.now().isoformat()
                 if args['genai']:    
                     run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption, config)
                 else:
-                    run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], bench_hook, model_precision, proc_id, mem_consumption)
+                    run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption)
+                iter_timestamp[num][p_idx]['end'] = datetime.datetime.now().isoformat()
+                prefix = '[warm-up]' if num == 0 else '[{}]'.format(num)
+                log.info(f"{prefix}[P{p_idx}] start: {iter_timestamp[num][p_idx]['start']}, end: {iter_timestamp[num][p_idx]['end']}")
 
     llm_bench_utils.metrics_print.print_average(iter_data_list, prompt_idx_list, args['batch_size'], True)
-    return iter_data_list, pretrain_time
+    return iter_data_list, pretrain_time, iter_timestamp
