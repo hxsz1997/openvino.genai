@@ -16,6 +16,7 @@ from transformers import set_seed
 import llm_bench_utils.output_json
 import llm_bench_utils.output_file
 import llm_bench_utils.gen_output_data as gen_output_data
+import llm_bench_utils.parse_json_data as parse_json_data
 from PIL import Image
 from openvino import Tensor
 from pathlib import Path
@@ -79,7 +80,6 @@ def run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_l
     
     iter_data = gen_output_data.gen_iterate_data(
         iter_idx=num,
-        loop_idx='',
         in_size=input_token_size * args['batch_size'],
         infer_count=len(tm_infer_list),
         out_size=generated_token_size,
@@ -204,7 +204,6 @@ def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list,
     )
     iter_data = gen_output_data.gen_iterate_data(
         iter_idx=num,
-        loop_idx='',
         in_size=0,
         infer_count=len(tm_list),
         out_size=num_tokens,
