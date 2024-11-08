@@ -56,3 +56,20 @@ def parse_speech_json_data(json_data_list):
             speech_param['timestamp'] = json_data['timestamp']
         speech_param_list.append(speech_param)
     return speech_param_list
+
+
+def parse_multimodal_json_data(json_data_list):
+    multimodal_param_list = []
+    for json_data in json_data_list:
+        if 'image' in json_data:
+            if json_data['image'] == '':
+                raise RuntimeError('== image should not be empty string ==')
+        else:
+            raise RuntimeError(f'== key word "image" does not exist ==')
+        if 'text' in json_data:
+            if json_data['text'] == '':
+                raise RuntimeError('== text should not be empty string ==')
+        else:
+            raise RuntimeError(f'== key word "text" does not exist ==')
+        multimodal_param_list.append(json_data)
+    return multimodal_param_list

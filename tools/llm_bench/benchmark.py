@@ -147,7 +147,12 @@ def get_argprser():
         help='Stop the generation even if output token size does not achieve infer_count or max token size ({DEFAULT_OUTPUT_TOKEN_SIZE}}).'
     )
     parser.add_argument('--set_torch_thread', default=0, type=num_infer_count_type, help='Set the number of Torch thread. ')
-
+    parser.add_argument(
+        '-mi',
+        '--multimodal_input',
+        default=None,
+        help='Example: {"image": "/path/to/your/image", "text": "Describe the content of the image"}'
+    )
     return parser.parse_args()
 
 

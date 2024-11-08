@@ -20,6 +20,8 @@ def get_param_from_file(args, input_key):
             data_list.append('def print_hello_world():')
         elif args['use_case'] == 'image_gen':
             data_list.append('sailing ship in storm by Leonardo da Vinci')
+        elif args['use_case'] == 'minicpm-v-2_6':
+            data_list.append({"image": "./prompts/cat.jpg", "text": "What is unusual on this image?"})
         else:
             raise RuntimeError(f'== {input_key} and prompt file is empty ==')
     elif args[input_key] is not None and args['prompt_file'] is not None:
@@ -27,7 +29,7 @@ def get_param_from_file(args, input_key):
     else:
         if args[input_key] is not None:
             if args[input_key] != '':
-                data_list.append(args[input_key])
+                data_list.append(json.loads(args[input_key]))
             else:
                 raise RuntimeError(f'== {input_key} path should not be empty string ==')
         else:
@@ -53,10 +55,11 @@ def read_wav(filepath, sampling_rate):
     return raw_speech[0]
 
 
-def get_multimodal_param_from_prompt_file(args):
+def get_multimodal_param_from_prompt_file(args, input_key):
+    is_json_data = False
     multimodal_param_list = []
     if args['prompt_file'] is None:
-        if args['multimodal_input']['image'] != '' and args['multimodal_input']['text'] != '':
+        if args[input_key]['image'] != '' and args['multimodal_input']['text'] != '':
             multimodal_param_list.append(args['multimodal_input'])
         else:
             raise RuntimeError('== image and text in multimodal input should not be empty ==')
@@ -146,6 +149,7 @@ def analyze_args(args):
         # Deduplication
         [model_args['prompt_index'].append(i) for i in args.prompt_index if i not in model_args['prompt_index']]
     model_args['end_token_stopping'] = args.end_token_stopping
+    model_args['multimodal_input'] = args.multimodal_input
 
     model_framework = args.framework
     model_path = Path(args.model)

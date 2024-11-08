@@ -146,7 +146,8 @@ def read_images(path: str) -> list[Tensor]:
     return [read_image(path)]
 
 def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_index,
-                        model_precision, proc_id, mem_consumption, config):
+                        model_precision, proc_id, mem_consumption):
+    import openvino_genai
     set_seed(args['seed'])
     input_text_list = [input_text] * args['batch_size']
     if args["output_dir"] is not None and num == 0:
@@ -161,6 +162,7 @@ def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list,
     max_shared_mem_consumption = ''
     if (args['mem_consumption'] == 1 and num == 0) or args['mem_consumption'] == 2:
         mem_consumption.start_collect_memory_consumption()
+    config = openvino_genai.GenerationConfig()
     config.max_new_tokens = DEFAULT_OUTPUT_TOKEN_SIZE if args['infer_count'] is None else args['infer_count']
     start = time.perf_counter()
     generation_result = model.generate(prompt, images=rgbs, generation_config=config)
@@ -251,14 +253,11 @@ def run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list,
 def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_consumption):
     if framework =='pt':
         raise RuntimeError('== Minicpmv2 is not support pt framework ==')
-    if args['genai']:
-        model, pretrain_time, config, tokenizer = FW_UTILS[framework].create_genai_minicpmv2_model(model_path, device, **args)
-    else:
-        model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
+    model, tokenizer, pretrain_time = FW_UTILS[framework].create_minicpmv2_model(model_path, device, **args)
     model_precision = llm_bench_utils.model_utils.get_model_precision(model_path.parts)
     iter_data_list = []
     md5_list = {num : {} for num in range(num_iters + 1)}
-    input_text_list = llm_bench_utils.model_utils.get_multimodal_param_from_prompt_file(args)
+    input_text_list = get_multimodal_prompt(args)
     if args['prompt_index'] is None:
         prompt_idx_list = [prompt_idx for prompt_idx, input_text in enumerate(input_text_list)]
         text_list = input_text_list
@@ -284,7 +283,7 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
                     log.info(f'[warm-up][P{p_idx}] Input text: {input_text}')
                 iter_timestamp[num][p_idx]['start'] = datetime.datetime.now().isoformat()
                 if args['genai']:    
-                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, p_idx, model_precision, proc_id, mem_consumption, config)
+                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, p_idx, model_precision, proc_id, mem_consumption)
                 else:
                     run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, p_idx, model_precision, proc_id, mem_consumption)
                 iter_timestamp[num][p_idx]['end'] = datetime.datetime.now().isoformat()
@@ -298,7 +297,7 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
                     log.info(f'[warm-up][P{p_idx}] Input text: {input_text}')
                 iter_timestamp[num][p_idx]['start'] = datetime.datetime.now().isoformat()
                 if args['genai']:    
-                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption, config)
+                    run_minicpmv2_genai(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption)
                 else:
                     run_minicpmv2(input_text, num, model, tokenizer, args, iter_data_list, md5_list, prompt_idx_list[idx], model_precision, proc_id, mem_consumption)
                 iter_timestamp[num][p_idx]['end'] = datetime.datetime.now().isoformat()
@@ -307,3 +306,15 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
 
     llm_bench_utils.metrics_print.print_average(iter_data_list, prompt_idx_list, args['batch_size'], True)
     return iter_data_list, pretrain_time, iter_timestamp
+
+def get_multimodal_prompt(args):
+    text_list = []
+    output_data_list, is_json_data = model_utils.get_param_from_file(args, 'multimodal_input')
+    if is_json_data is True:
+        text_param_list = parse_json_data.parse_multimodal_json_data(output_data_list)
+        if len(text_param_list) > 0:
+            for text in text_param_list:
+                text_list.append(text)
+    else:
+        text_list.append(output_data_list[0])
+    return text_list

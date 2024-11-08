@@ -395,8 +395,8 @@ def create_minicpmv2_model(model_path, device, **kwargs):
     if not model_path_existed:
         raise RuntimeError(f'==Failure ==: model path:{model_path} does not exist')
     else:
-        if kwargs.get("genai", False):
-            raise ValueError(f"OpenVINO GenAI based benchmarking is not available for {model_type}")
+        if kwargs.get("genai", False) and is_genai_available(log_msg=True):
+            return create_genai_minicpmv2_model(model_path, device, **kwargs)
         start = time.perf_counter()
         ov_model, tokenizer = init_model(core, model_path, llm_path, image_emb_path, resampler_path, device)
         end = time.perf_counter()
@@ -412,21 +412,6 @@ def create_genai_minicpmv2_model(model_path, device, **kwargs):
 
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     config = openvino_genai.GenerationConfig()
-
-    cb = kwargs.get("use_cb", False)
-    if cb:
-        log.info("Continuous Batching mode activated")
-        default_cb_config = {"cache_size": 1}
-        if "GPU" in device:
-            default_cb_config["block_size"] = 16
-        scheduler_config = openvino_genai.SchedulerConfig()
-        scheduler_params = kwargs.get("cb_config") or default_cb_config
-        if scheduler_params:
-            log.info(f"Scheduler parameters:\n{scheduler_params}")
-
-            for param, value in scheduler_params.items():
-                setattr(scheduler_config, param, value)
-        ov_config["scheduler_config"] = scheduler_config
     enable_compile_cache = dict()
     if "GPU" == device:
         # Cache compiled models on disk for GPU to save time on the
@@ -437,7 +422,7 @@ def create_genai_minicpmv2_model(model_path, device, **kwargs):
     end = time.perf_counter()
     log.info(f'Pipeline initialization time: {end - start:.2f}s')
 
-    return llm_pipe, end - start, config, tokenizer
+    return llm_pipe, tokenizer,  end - start
 
 def is_genai_available(log_msg=False):
     import importlib
