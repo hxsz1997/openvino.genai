@@ -10,9 +10,10 @@ from optimum.intel.openvino import (
     OVStableDiffusionPipeline,
     OVLatentConsistencyModelPipeline,
     OVStableDiffusionXLPipeline,
-    OVModelForSpeechSeq2Seq
+    OVModelForSpeechSeq2Seq,
+    OVModelForVisualCausalLM
 )
-from llm_bench_utils.ov_model_classes import OVMPTModel, OVLDMSuperResolutionPipeline, OVChatGLMModel, OvMiniCPMV
+from llm_bench_utils.ov_model_classes import OVMPTModel, OVLDMSuperResolutionPipeline, OVChatGLMModel
 
 TOKENIZE_CLASSES_MAPPING = {
     'decoder': AutoTokenizer,
@@ -42,7 +43,7 @@ OV_MODEL_CLASSES_MAPPING = {
     'chatglm2': OVModelForCausalLM,
     'chatglm3': OVModelForCausalLM,
     'chatglm': OVChatGLMModel,
-    'minicpm-v-2_6': OvMiniCPMV,
+    'minicpm-v-2_6': OVModelForVisualCausalLM,
     'whisper': OVModelForSpeechSeq2Seq,
 }
 

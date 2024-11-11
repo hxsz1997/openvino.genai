@@ -383,13 +383,6 @@ def create_speech_2txt_model(model_path, device, **kwargs):
     return pipe, processor, from_pretrained_time, False
 
 def create_minicpmv2_model(model_path, device, **kwargs):
-    from llm_bench_utils.ov_model_classes import init_model
-    core = ov.Core()
-    model_path = Path(model_path)
-    image_emb_path = Path("image_encoder.xml")
-    resampler_path = Path("resampler.xml")
-    llm_path = Path("language_model_int4")
-
     model_path_existed = Path(model_path).exists()
     # load model
     if not model_path_existed:
@@ -397,11 +390,29 @@ def create_minicpmv2_model(model_path, device, **kwargs):
     else:
         if kwargs.get("genai", False) and is_genai_available(log_msg=True):
             return create_genai_minicpmv2_model(model_path, device, **kwargs)
-        start = time.perf_counter()
-        ov_model, tokenizer = init_model(core, model_path, llm_path, image_emb_path, resampler_path, device)
-        end = time.perf_counter()
-        from_pretrained_time = end - start
-    return ov_model, tokenizer, from_pretrained_time
+        elif kwargs.get("use_notebook", False):
+            from llm_bench_utils.ov_model_classes import init_model
+            core = ov.Core()
+            model_path = Path(model_path)
+            image_emb_path = Path("image_encoder.xml")
+            resampler_path = Path("resampler.xml")
+            llm_path = Path("language_model_int4")          
+            start = time.perf_counter()
+            ov_model, tokenizer = init_model(core, model_path, llm_path, image_emb_path, resampler_path, device)
+            end = time.perf_counter()
+            from_pretrained_time = end - start
+            return ov_model, tokenizer, from_pretrained_time, None, False, True
+        else:
+            default_model_type = DEFAULT_MODEL_CLASSES[kwargs['use_case']]
+            model_type = kwargs.get('model_type', default_model_type)
+            model_class = OV_MODEL_CLASSES_MAPPING.get(model_type, OV_MODEL_CLASSES_MAPPING[default_model_type])
+            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            start = time.perf_counter()
+            ov_model = model_class.from_pretrained(model_path, trust_remote_code=True)
+            end = time.perf_counter()
+            bench_hook = get_bench_hook(kwargs['num_beams'], ov_model)
+            from_pretrained_time = end - start
+            return ov_model, processor, from_pretrained_time, bench_hook, False, False
 
 def create_genai_minicpmv2_model(model_path, device, **kwargs):
     import openvino_genai
@@ -422,7 +433,7 @@ def create_genai_minicpmv2_model(model_path, device, **kwargs):
     end = time.perf_counter()
     log.info(f'Pipeline initialization time: {end - start:.2f}s')
 
-    return llm_pipe, tokenizer,  end - start
+    return llm_pipe, tokenizer,  end - start, None, True, False
 
 def is_genai_available(log_msg=False):
     import importlib

@@ -153,6 +153,7 @@ def get_argprser():
         default=None,
         help='Example: {"image": "/path/to/your/image", "text": "Describe the content of the image"}'
     )
+    parser.add_argument("--use_notebook", action="store_true", help="Use OpenVINO Notebook optimized pipelines for benchmarking")
     return parser.parse_args()
 
 

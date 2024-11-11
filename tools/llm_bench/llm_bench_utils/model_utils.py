@@ -172,6 +172,7 @@ def analyze_args(args):
         log.info(f"PT Config={model_args['config']}")
     model_args['model_type'] = get_model_type(model_name, use_case, model_framework)
     model_args['model_name'] = model_name
+    model_args['use_notebook'] = args.use_notebook
 
     if args.use_cb and not args.genai:
         raise RuntimeError("Continuous batching mode supported only via OpenVINO GenAI")
