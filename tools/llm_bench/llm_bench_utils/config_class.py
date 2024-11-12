@@ -43,7 +43,7 @@ OV_MODEL_CLASSES_MAPPING = {
     'chatglm2': OVModelForCausalLM,
     'chatglm3': OVModelForCausalLM,
     'chatglm': OVChatGLMModel,
-    'minicpm-v-2_6': OVModelForVisualCausalLM,
+    'minicpm-v': OVModelForVisualCausalLM,
     'whisper': OVModelForSpeechSeq2Seq,
 }
 
@@ -63,7 +63,7 @@ USE_CASES = {
     'speech2text': ['whisper'],
     'image_cls': ['vit'],
     'code_gen': ['replit', 'codegen2', 'codegen', 'codet5', "stable-code"],
-    'minicpm-v-2_6': ['minicpm-v'],
+    'multimodal': ['minicpm-v'],
     'text_gen': [
         'decoder',
         't5',
@@ -121,5 +121,5 @@ DEFAULT_MODEL_CLASSES = {
     'speech2text': 'whisper',
     'code_gen': 'decoder',
     'ldm_super_resolution': 'ldm_super_resolution',
-    'minicpm-v-2_6': 'minicpm-v-2_6'
+    'multimodal': 'minicpm-v'
 }

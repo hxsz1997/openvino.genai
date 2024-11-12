@@ -1,0 +1,15 @@
+iteration,model,framework,device,pretrain_time(s),input_size,infer_count,generation_time(s),output_size,latency(ms),1st_latency(ms),2nd_avg_latency(ms),precision,max_rss_mem(MB),max_uss_mem(MB),max_shared_mem(MB),prompt_idx,1st_infer_latency(ms),2nd_infer_avg_latency(ms),num_beams,batch_size,tokenization_time,detokenization_time,result_md5,start,end,vision_latency(ms),sampler_latency(ms)
+0,MiniCPM-V-2_6,ov,GPU,6.17536,361,88,3.3603,88,38.18526,145.62739,31.58581,,5930.15234,1031.01953,4899.13281,0,144.48658,30.16486,1,1,34.47322,0.56819,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],2024-11-12T19:17:56.037627,2024-11-12T19:17:59.439624,222.6539,83.94675
+1,MiniCPM-V-2_6,ov,GPU,,361,88,2.85419,88,32.43395,104.98553,26.97444,,,,,0,104.07287,25.51528,1,1,37.4508,0.74623,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],2024-11-12T19:17:59.439705,2024-11-12T19:18:02.334437,196.67722,35.47126
+2,MiniCPM-V-2_6,ov,GPU,,361,88,2.75393,88,31.29466,106.28925,26.16275,,,,,0,105.39853,25.01187,1,1,48.90663,0.21535,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],2024-11-12T19:18:02.334596,2024-11-12T19:18:05.140585,194.51041,37.33914
+avg,MiniCPM-V-2_6,ov,GPU,,361.0,88.0,2.80406,88.0,31.86431,105.63739,26.5686,,,,,0,104.7357,25.26357,1,1,43.17871,0.48079,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],,,196.67722,35.47126
+mini,MiniCPM-V-2_6,ov,GPU,,361,88,2.75393,88,31.29466,104.98553,26.16275,,,,,0,104.07287,25.01187,1,1,37.4508,0.21535,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],,,196.67722,35.47126
+median,MiniCPM-V-2_6,ov,GPU,,361.0,88.0,2.80406,88.0,31.86431,105.63739,26.5686,,,,,0,104.7357,25.26357,1,1,43.17871,0.48079,['6f2aea7958c88bfcf4ec6de5f7e73c1e'],,,196.67722,35.47126
+,,,,,,,,,,,,,,,,,,,,,,,,,,,
+tokenization_time: Tokenizer encode time,,,,,,,,,,,,,,,,,,,,,,,,,,,
+detokenization_time: Tokenizer decode time,,,,,,,,,,,,,,,,,,,,,,,,,,,
+pretrain_time: Total time of load model and compile model,,,,,,,,,,,,,,,,,,,,,,,,,,,
+generation_time: Time for one interaction. (e.g. The duration of  answering one question or generating one picture),,,,,,,,,,,,,,,,,,,,,,,,,,,
+iteration=0: warm-up; iteration=avg: average (exclude warm-up);iteration=mini: minimum value (exclude warm-up);iteration=median: median value (exclude warm-up);,,,,,,,,,,,,,,,,,,,,,,,,,,,
+max_rss_mem: max rss memory consumption;,,,,,,,,,,,,,,,,,,,,,,,,,,,
+max_shared_mem: max shared memory consumption;,,,,,,,,,,,,,,,,,,,,,,,,,,,

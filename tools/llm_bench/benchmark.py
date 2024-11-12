@@ -147,12 +147,6 @@ def get_argprser():
         help='Stop the generation even if output token size does not achieve infer_count or max token size ({DEFAULT_OUTPUT_TOKEN_SIZE}}).'
     )
     parser.add_argument('--set_torch_thread', default=0, type=num_infer_count_type, help='Set the number of Torch thread. ')
-    parser.add_argument(
-        '-mi',
-        '--multimodal_input',
-        default=None,
-        help='Example: {"image": "/path/to/your/image", "text": "Describe the content of the image"}'
-    )
     parser.add_argument("--use_notebook", action="store_true", help="Use OpenVINO Notebook optimized pipelines for benchmarking")
     return parser.parse_args()
 
@@ -163,7 +157,7 @@ CASE_TO_BENCH = {
     'code_gen': bench_text.run_text_generation_benchmark,
     'ldm_super_resolution': bench_ldm_sr.run_ldm_super_resolution_benchmark,
     'speech2text': bench_speech.run_speech_2_txt_benchmark,
-    'minicpm-v-2_6': bench_minicpmv2.run_minicpmv2_benchmark,
+    'multimodal': bench_minicpmv2.run_minicpmv2_benchmark,
 }
 
 

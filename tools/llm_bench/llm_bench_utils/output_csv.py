@@ -6,6 +6,7 @@ import numpy as np
 import copy
 from pathlib import Path
 import llm_bench_utils.output_json as output_json
+import math
 
 
 def output_comments(result, use_case, writer):
@@ -144,8 +145,8 @@ def gen_data_to_csv(result, iter_data, pretrain_time, iter_timestamp):
     result['max_uss_mem(MB)'] = round(uss_mem, 5) if uss_mem != '' else uss_mem
     result['max_shared_mem(MB)'] = round(shared_mem, 5) if shared_mem != '' else shared_mem
     result['prompt_idx'] = iter_data['prompt_idx']
-    result['tokenization_time'] = round(token_time, 5) if token_time != '' else token_time
-    result['detokenization_time'] = round(detoken_time, 5) if detoken_time != '' else detoken_time
+    result['tokenization_time'] = round(token_time, 5) if token_time != '' and not math.isnan(token_time) else 'NA'
+    result['detokenization_time'] = round(detoken_time, 5) if detoken_time != '' and not math.isnan(detoken_time) else 'NA'
     result['start'], result['end'] = output_json.get_timestamp(iter_data['iteration'], iter_data['prompt_idx'], iter_timestamp)
 
 

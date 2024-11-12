@@ -439,7 +439,7 @@ def run_minicpmv2_benchmark(model_path, framework, device, args, num_iters, mem_
 
 def get_multimodal_prompt(args):
     text_list = []
-    output_data_list, is_json_data = model_utils.get_param_from_file(args, 'multimodal_input')
+    output_data_list, is_json_data = model_utils.get_param_from_file(args, 'media')
     if is_json_data is True:
         text_param_list = parse_json_data.parse_multimodal_json_data(output_data_list)
         if len(text_param_list) > 0:
