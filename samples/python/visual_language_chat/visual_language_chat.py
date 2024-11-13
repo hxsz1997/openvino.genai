@@ -9,7 +9,6 @@ import openvino_genai
 from PIL import Image
 from openvino import Tensor
 from pathlib import Path
-import time
 
 
 def streamer(subword: str) -> bool:
@@ -62,10 +61,7 @@ def main():
         # Cache compiled models on disk for GPU to save time on the
         # next run. It's not beneficial for CPU.
         enable_compile_cache["CACHE_DIR"] = "vlm_cache"
-    start = time.perf_counter()
     pipe = openvino_genai.VLMPipeline(args.model_dir, device, **enable_compile_cache)
-    end = time.perf_counter()
-    pretrained_time = end - start
 
     config = openvino_genai.GenerationConfig()
     config.max_new_tokens = 100
